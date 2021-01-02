@@ -1,0 +1,30 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net472</TargetFramework>
+    <RootNamespace>Microcelium.Testing</RootNamespace>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="FluentAssertions" Version="5.10.3" />
+    <PackageReference Include="Microsoft.AspNet.Mvc" Version="5.2.7" />
+    <PackageReference Include="Microsoft.AspNet.WebApi.Core" Version="5.2.7" />
+    <PackageReference Include="Microsoft.AspNet.WebApi.Owin" Version="5.2.7" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.8.3" />
+    <PackageReference Include="Microsoft.Owin.Testing" Version="4.1.1" />
+    <PackageReference Include="NSubstitute" Version="4.2.2" />
+    <PackageReference Include="NUnit" Version="3.12.0" />
+    <PackageReference Include="NUnit3TestAdapter" Version="3.17.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Microcelium.Testing.AspNet.Mvc\Microcelium.Testing.AspNet.Mvc.csproj" />
+    <ProjectReference Include="..\Microcelium.Testing.AspNet.WebApi\Microcelium.Testing.AspNet.WebApi.csproj" />
+    <ProjectReference Include="..\Microcelium.Testing.Logging\Microcelium.Testing.Logging.csproj" />
+    <ProjectReference Include="..\Microcelium.Testing.NUnit\Microcelium.Testing.NUnit.csproj" />
+    <ProjectReference Include="..\Microcelium.Testing.Windsor.NSubstitute\Microcelium.Testing.Windsor.NSubstitute.csproj" />
+  </ItemGroup>
+
+</Project>

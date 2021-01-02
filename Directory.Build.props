@@ -1,0 +1,19 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project>
+  <PropertyGroup>
+    <GenerateDocumentationFile Condition="'$(GenerateDocumentationFile)' ==''">true</GenerateDocumentationFile>
+    <DebugType Condition="'$(DebugType)' ==''">portable</DebugType>
+    <DebugSymbols Condition="'$(DebugSymbols)' ==''">true</DebugSymbols>
+    <Product>Microcelium.Testing</Product>
+    <IncludeSymbolsInPackage Condition="'$(IncludeSymbolsInPackage)' == ''">true</IncludeSymbolsInPackage>
+    <AllowedOutputExtensionsInPackageBuildOutputFolder>$(AllowedOutputExtensionsInPackageBuildOutputFolder);.pdb;</AllowedOutputExtensionsInPackageBuildOutputFolder>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    <Authors>microcelium</Authors>
+    <Copyright>Copyright microcelium @ 2019</Copyright>
+    <LangVersion>latest</LangVersion>
+  </PropertyGroup>
+  <ItemGroup>
+    <SourceLinkBitbucketGitHost Include="stash.inteligenz-cloud.com" Version="3.4" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,137 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.29326.143
+MinimumVisualStudioVersion = 15.0.26124.0
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microcelium.Testing", "Microcelium.Testing\Microcelium.Testing.csproj", "{D15B5A3C-23D3-4F20-BB97-92AE3A77B103}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microcelium.Testing.Tests", "Microcelium.Testing.Tests\Microcelium.Testing.Tests.csproj", "{12629A33-9C1F-4764-953D-79E0FD5D18E0}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".project", ".project", "{071AD36B-F432-4C5D-919A-C4F4A0F259E4}"
+	ProjectSection(SolutionItems) = preProject
+		..\.editorconfig = ..\.editorconfig
+		..\.gitattributes = ..\.gitattributes
+		..\.gitignore = ..\.gitignore
+		..\Directory.Build.props = ..\Directory.Build.props
+		..\README.md = ..\README.md
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".build", ".build", "{2ED375EA-32FC-4CB7-967D-817445E34BD1}"
+	ProjectSection(SolutionItems) = preProject
+		..\build.bat = ..\build.bat
+		..\Build.fsx = ..\Build.fsx
+	EndProjectSection
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microcelium.Testing.Selenium", "Microcelium.Testing.Selenium\Microcelium.Testing.Selenium.csproj", "{22FDF7C5-5FE5-4118-BF29-56F7E73ACD60}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microcelium.Testing.NUnit", "Microcelium.Testing.NUnit\Microcelium.Testing.NUnit.csproj", "{64D9C1D6-8477-436D-BC5D-4D533A02BAC1}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microcelium.Testing.NUnit.AspNetCore.TestServer", "Microcelium.Testing.NUnit.AspNetCore.TestServer\Microcelium.Testing.NUnit.AspNetCore.TestServer.csproj", "{0998D17C-2829-4A48-BD79-89E79FA78644}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".tests", ".tests", "{7714005F-E2C2-4F0D-B66C-A9CBA680D1C8}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microcelium.Testing.Ninject.NSubstitute", "Microcelium.Testing.Ninject.NSubstitute\Microcelium.Testing.Ninject.NSubstitute.csproj", "{66A7285C-0DB7-43FB-9CF4-FD4F24069112}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microcelium.Testing.AspNet.Tests", "Microcelium.Testing.AspNet.Tests\Microcelium.Testing.AspNet.Tests.csproj", "{27CB792E-6DFF-4702-AA85-F301A52DB1B6}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microcelium.Testing.AspNet.Mvc", "Microcelium.Testing.AspNet.Mvc\Microcelium.Testing.AspNet.Mvc.csproj", "{5FADE03A-9DDC-4BE1-A682-77F0FC796BBA}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microcelium.Testing.AspNet.WebApi", "Microcelium.Testing.AspNet.WebApi\Microcelium.Testing.AspNet.WebApi.csproj", "{436C3F17-3585-4B06-9E5A-8A298A2D8ACD}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microcelium.Testing.NUnit.NHibernate", "Microcelium.Testing.NUnit.NHibernate\Microcelium.Testing.NUnit.NHibernate.csproj", "{34089DEB-234D-4ADA-9B13-B67C415A43BF}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microcelium.Testing.Windsor.NSubstitute", "Microcelium.Testing.Windsor.NSubstitute\Microcelium.Testing.Windsor.NSubstitute.csproj", "{6D8B4124-D788-4283-BD49-99579B3F14B8}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microcelium.Testing.AspNetCore.Tests", "Microcelium.Testing.AspNetCore.Tests\Microcelium.Testing.AspNetCore.Tests.csproj", "{856070BB-F11F-44B3-A30B-7D5CE4D0CAD3}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microcelium.Testing.AspNetCore", "Microcelium.Testing.AspNetCore\Microcelium.Testing.AspNetCore.csproj", "{920BD6AF-4014-40C0-A468-457D99CCC2B3}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microcelium.Testing.Exceptions", "Microcelium.Testing.Exceptions\Microcelium.Testing.Exceptions.csproj", "{2BF3FADA-F620-46DB-B57F-447B963349A9}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microcelium.Testing.Logging", "Microcelium.Testing.Logging\Microcelium.Testing.Logging.csproj", "{7F1091DD-B508-478E-9975-92EFBB15581B}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microcelium.Testing.NUnit.Selenium", "Microcelium.Testing.NUnit.Selenium\Microcelium.Testing.NUnit.Selenium.csproj", "{467674F5-43E2-4C64-B714-D37763F3BFD4}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{D15B5A3C-23D3-4F20-BB97-92AE3A77B103}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D15B5A3C-23D3-4F20-BB97-92AE3A77B103}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D15B5A3C-23D3-4F20-BB97-92AE3A77B103}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D15B5A3C-23D3-4F20-BB97-92AE3A77B103}.Release|Any CPU.Build.0 = Release|Any CPU
+		{12629A33-9C1F-4764-953D-79E0FD5D18E0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{12629A33-9C1F-4764-953D-79E0FD5D18E0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{12629A33-9C1F-4764-953D-79E0FD5D18E0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{12629A33-9C1F-4764-953D-79E0FD5D18E0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{22FDF7C5-5FE5-4118-BF29-56F7E73ACD60}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{22FDF7C5-5FE5-4118-BF29-56F7E73ACD60}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{22FDF7C5-5FE5-4118-BF29-56F7E73ACD60}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{22FDF7C5-5FE5-4118-BF29-56F7E73ACD60}.Release|Any CPU.Build.0 = Release|Any CPU
+		{64D9C1D6-8477-436D-BC5D-4D533A02BAC1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{64D9C1D6-8477-436D-BC5D-4D533A02BAC1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{64D9C1D6-8477-436D-BC5D-4D533A02BAC1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{64D9C1D6-8477-436D-BC5D-4D533A02BAC1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0998D17C-2829-4A48-BD79-89E79FA78644}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0998D17C-2829-4A48-BD79-89E79FA78644}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0998D17C-2829-4A48-BD79-89E79FA78644}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0998D17C-2829-4A48-BD79-89E79FA78644}.Release|Any CPU.Build.0 = Release|Any CPU
+		{66A7285C-0DB7-43FB-9CF4-FD4F24069112}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{66A7285C-0DB7-43FB-9CF4-FD4F24069112}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{66A7285C-0DB7-43FB-9CF4-FD4F24069112}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{66A7285C-0DB7-43FB-9CF4-FD4F24069112}.Release|Any CPU.Build.0 = Release|Any CPU
+		{27CB792E-6DFF-4702-AA85-F301A52DB1B6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{27CB792E-6DFF-4702-AA85-F301A52DB1B6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{27CB792E-6DFF-4702-AA85-F301A52DB1B6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{27CB792E-6DFF-4702-AA85-F301A52DB1B6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5FADE03A-9DDC-4BE1-A682-77F0FC796BBA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5FADE03A-9DDC-4BE1-A682-77F0FC796BBA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5FADE03A-9DDC-4BE1-A682-77F0FC796BBA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5FADE03A-9DDC-4BE1-A682-77F0FC796BBA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{436C3F17-3585-4B06-9E5A-8A298A2D8ACD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{436C3F17-3585-4B06-9E5A-8A298A2D8ACD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{436C3F17-3585-4B06-9E5A-8A298A2D8ACD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{436C3F17-3585-4B06-9E5A-8A298A2D8ACD}.Release|Any CPU.Build.0 = Release|Any CPU
+		{34089DEB-234D-4ADA-9B13-B67C415A43BF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{34089DEB-234D-4ADA-9B13-B67C415A43BF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{34089DEB-234D-4ADA-9B13-B67C415A43BF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{34089DEB-234D-4ADA-9B13-B67C415A43BF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6D8B4124-D788-4283-BD49-99579B3F14B8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6D8B4124-D788-4283-BD49-99579B3F14B8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6D8B4124-D788-4283-BD49-99579B3F14B8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6D8B4124-D788-4283-BD49-99579B3F14B8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{856070BB-F11F-44B3-A30B-7D5CE4D0CAD3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{856070BB-F11F-44B3-A30B-7D5CE4D0CAD3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{856070BB-F11F-44B3-A30B-7D5CE4D0CAD3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{856070BB-F11F-44B3-A30B-7D5CE4D0CAD3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{920BD6AF-4014-40C0-A468-457D99CCC2B3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{920BD6AF-4014-40C0-A468-457D99CCC2B3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{920BD6AF-4014-40C0-A468-457D99CCC2B3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{920BD6AF-4014-40C0-A468-457D99CCC2B3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2BF3FADA-F620-46DB-B57F-447B963349A9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2BF3FADA-F620-46DB-B57F-447B963349A9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2BF3FADA-F620-46DB-B57F-447B963349A9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2BF3FADA-F620-46DB-B57F-447B963349A9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7F1091DD-B508-478E-9975-92EFBB15581B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7F1091DD-B508-478E-9975-92EFBB15581B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7F1091DD-B508-478E-9975-92EFBB15581B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7F1091DD-B508-478E-9975-92EFBB15581B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{467674F5-43E2-4C64-B714-D37763F3BFD4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{467674F5-43E2-4C64-B714-D37763F3BFD4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{467674F5-43E2-4C64-B714-D37763F3BFD4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{467674F5-43E2-4C64-B714-D37763F3BFD4}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{12629A33-9C1F-4764-953D-79E0FD5D18E0} = {7714005F-E2C2-4F0D-B66C-A9CBA680D1C8}
+		{27CB792E-6DFF-4702-AA85-F301A52DB1B6} = {7714005F-E2C2-4F0D-B66C-A9CBA680D1C8}
+		{856070BB-F11F-44B3-A30B-7D5CE4D0CAD3} = {7714005F-E2C2-4F0D-B66C-A9CBA680D1C8}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {FC3F34EB-9D84-44AB-8CC6-7B29684F3362}
+	EndGlobalSection
+EndGlobal
