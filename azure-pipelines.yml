@@ -11,7 +11,7 @@ pool:
 
 variables:
   Release: 1
-  VersionPrefix: 1.1.0
+  VersionPrefix: 1.0.0
   VersionSuffix: $[counter(variables['VersionPrefix'], 0)]
 
 steps:
