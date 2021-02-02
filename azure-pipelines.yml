@@ -18,7 +18,6 @@ steps:
 - task: NuGetAuthenticate@0
   inputs: 
     forceReinstallCredentialProvider: true
-    nuGetServiceConnections: false
 - bash: export Version="$(VersionPrefix).$(VersionSuffix)" && ./build.sh
 - task: NuGetCommand@2
   inputs:
