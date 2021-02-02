@@ -1,6 +1,5 @@
 ﻿using System;
 using FluentAssertions;
-using Microcelium.Testing.Ninject.NSubstitute;
 using NSubstitute;
 using NUnit.Framework;
 

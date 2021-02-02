@@ -25,7 +25,7 @@ namespace Microcelium.Testing.Selenium.PageFixtures
     private ILogger log;
 
     [OneTimeSetUp]
-    public async Task SetUp()
+    public void SetUp()
     {
       this.log = this.CreateLogger();
       var args = new NameValueCollection();
@@ -41,14 +41,14 @@ namespace Microcelium.Testing.Selenium.PageFixtures
         router => router
           .MapGet(
             "/page1",
-            (req, res, data) =>
+            (_, res, __) =>
               {
                 res.ContentType = "text/html";
                 return res.WriteAsync("<body><a href='page2'>Page 2</a></body>");
               })
           .MapGet(
             "/page2",
-            (req, res, data) =>
+            (_, res, __) =>
               {
                 res.ContentType = "text/html";
                 return res.WriteAsync("<body><label><input type='radio' />Foo</label></body>");

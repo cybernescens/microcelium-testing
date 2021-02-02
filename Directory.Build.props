@@ -11,9 +11,7 @@
     <EmbedUntrackedSources>true</EmbedUntrackedSources>
     <Authors>microcelium</Authors>
     <Copyright>Copyright microcelium @ 2019</Copyright>
-    <LangVersion>latest</LangVersion>
+    <LangVersion>9</LangVersion>
+    <DefineConstants Condition="'$(COMPUTERNAME)' == 'joe-nuc'">$(DefineConstants);DEVELOPER_MACHINE</DefineConstants>
   </PropertyGroup>
-  <ItemGroup>
-    <SourceLinkBitbucketGitHost Include="stash.inteligenz-cloud.com" Version="3.4" />
-  </ItemGroup>
 </Project>

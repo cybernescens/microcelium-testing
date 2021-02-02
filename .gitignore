@@ -44,3 +44,7 @@ launchSettings.json
 
 screenshots
 selenium-bin
+
+
+!Build.fsx.lock
+!build.fsx.lock

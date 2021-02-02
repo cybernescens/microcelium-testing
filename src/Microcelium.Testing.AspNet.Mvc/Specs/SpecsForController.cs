@@ -10,17 +10,33 @@ using System.Web.Routing;
 
 namespace Microcelium.Testing.Specs
 {
+  /// <summary>
+  /// Creates a test specification for an MVC Controller
+  /// </summary>
+  /// <typeparam name="TSut">the type of Controller</typeparam>
+  /// <typeparam name="TResult">the return type of the Controller Action</typeparam>
+  /// <typeparam name="TAutoMocker">the type of AutoMocker used</typeparam>
   public abstract class SpecsForController<TSut, TResult, TAutoMocker> : AutoMockSpecFor<TSut, TResult, TAutoMocker> 
     where TSut : Controller
     where TResult : ActionResult
     where TAutoMocker : IMvcAutoMocker, new()
   {
+    /// <summary>
+    /// the <see cref="HttpContextBase"/>
+    /// </summary>
     protected HttpContextBase HttpContext => Subject.ControllerContext.HttpContext;
 
+    /// <summary>
+    /// the HTTP Request Method
+    /// </summary>
     protected virtual HttpMethod Method => HttpMethod.Get;
 
+    /// <summary>
+    /// The Controller Action performed
+    /// </summary>
     protected abstract Expression<Action<TSut>> Action { get; }
 
+    /// <inheritdoc />
     protected override TSut Arrange(Func<TSut> controllerCreator)
     {
       var httpContextBase = AutoMocker.CreateHttpContext();
@@ -51,6 +67,7 @@ namespace Microcelium.Testing.Specs
       return controller;
     }
 
+    /// <inheritdoc />
     protected override TResult Act(TSut subject)
     {
       var actionInvoker = new ControllerSpecActionInvoker<TResult>(Action.Body);

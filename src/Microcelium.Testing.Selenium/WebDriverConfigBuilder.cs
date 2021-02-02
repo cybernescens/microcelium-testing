@@ -68,7 +68,7 @@ namespace Microcelium.Testing.Selenium
     /// <summary>
     /// Specifies the download directory for any tests that may require downloading files
     /// </summary>
-    /// <param name="directory">the target directory</param>
+    /// <param name="downloadDirectory">the target directory</param>
     /// <returns></returns>
     public WebDriverConfigBuilder DownloadDirectory(DirectoryInfo downloadDirectory)
     {
@@ -76,6 +76,10 @@ namespace Microcelium.Testing.Selenium
       return this;
     }
 
+    /// <summary>
+    /// Buids the <see cref="IWebDriverConfig"/>
+    /// </summary>
+    /// <returns></returns>
     public IWebDriverConfig Build()
     {
       var driverConfig = new WebDriverConfig();

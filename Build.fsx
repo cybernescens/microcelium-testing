@@ -35,7 +35,7 @@ CoreTracing.ensureConsoleListener ()
   let version = Version.fromFile "filepath" //looks for a file @ "filepath"
 *)
 
-let version = Version.from "1.2" //parses from param
+let version = Version.from "1.0" //parses from param
 let versionparts = Version.parts version
 let versionstr = Version.toString version
 
@@ -64,6 +64,7 @@ Target.create "Build" (fun _ ->
                DistributedLoggers = Some []
                Loggers = Some [] 
                DisableInternalBinLog = true  
+               NoConsoleLogger = false
            }
      }) (srcDir)
 )

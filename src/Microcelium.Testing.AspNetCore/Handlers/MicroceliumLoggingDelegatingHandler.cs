@@ -9,7 +9,7 @@ using Microsoft.Extensions.Logging;
 namespace Microcelium.Testing.AspNetCore.Handlers
 {
   /// <summary>
-  ///   Logs using LibLog (Logger agnostic)
+  ///   Makes detailed logs of Https Requests
   /// </summary>
   public class MicroceliumLoggingDelegatingHandler : DelegatingHandler
   {
@@ -20,14 +20,20 @@ namespace Microcelium.Testing.AspNetCore.Handlers
     private readonly bool includeContents;
     private readonly ILogger log;
 
+    /// <summary>
+    /// Instantiates a <see cref="MicroceliumLoggingDelegatingHandler"/>
+    /// </summary>
+    /// <param name="innerHandler">the parent <see cref="HttpMessageHandler"/></param>
+    /// <param name="log">the <see cref="ILogger"/></param>
     public MicroceliumLoggingDelegatingHandler(HttpMessageHandler innerHandler, ILogger log)
       : this(innerHandler, true, log) { }
 
     /// <summary>
-    /// Records Request and Response Envelop Details
+    /// Instantiates a <see cref="MicroceliumLoggingDelegatingHandler"/>
     /// </summary>
     /// <param name="innerHandler">the next handler</param>
     /// <param name="includeContents">true to log the contents of the response</param>
+    /// <param name="log">the <see cref="ILogger"/></param>
     public MicroceliumLoggingDelegatingHandler(HttpMessageHandler innerHandler, bool includeContents, ILogger log)
       : base(innerHandler)
     {
@@ -35,6 +41,7 @@ namespace Microcelium.Testing.AspNetCore.Handlers
       this.log = log;
     }
 
+    /// <inheritdoc />
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
       => await LogResponseAsync(await base.SendAsync(await LogRequestAsync(request), cancellationToken));
 
