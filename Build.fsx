@@ -35,7 +35,7 @@ CoreTracing.ensureConsoleListener ()
   let version = Version.fromFile "filepath" //looks for a file @ "filepath"
 *)
 
-let version = Version.from "1.0" //parses from param
+let version = Version.fromEnvironment ()
 let versionparts = Version.parts version
 let versionstr = Version.toString version
 
