@@ -1,7 +1,9 @@
-﻿using System.Collections.Specialized;
-using System.Threading.Tasks;
+﻿using System.Collections.Generic;
+using System.Collections.Specialized;
+using System.Linq;
 using Microcelium.Testing.Net;
-using Microcelium.Testing.NUnit;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using NSubstitute;
 using NUnit.Framework;
 using OpenQA.Selenium;
@@ -12,18 +14,20 @@ namespace Microcelium.Testing.Selenium
   class CreatingAWebDriverWithAnInitializationStep : IRequireLogger
   {
     private IWebDriver fakeWebDriver;
-    private IWebDriverConfig fakeConfig;
+    private WebDriverConfig fakeConfig;
 
     [SetUp]
     public void SetUp()
     {
-      var log = this.CreateLogger();
+      var services = new ServiceCollection();
       var args = new NameValueCollection();
       fakeWebDriver = Substitute.For<IWebDriver>();
-      args.Add("selenium.baseUrl", $"http://localhost:{TcpPort.NextFreePort()}");
-      args.Add("webdriver.browser.type", "fake-webdriver");
-      fakeConfig = WebDriver.Configure(cfg => cfg.WithDefaultOptions().Providers(x => args[x]), log).Build();
-      WebDriverFactory.AddDriverBuilder("fake-webdriver", c => fakeWebDriver);
+      args.Add("BaseUrl", $"http://localhost:{TcpPort.NextFreePort()}");
+      args.Add("BrowserType", "fake-webdriver");
+      services.AddInMemoryWebDriverConfig(args.Keys.Cast<string>().Select(x => KeyValuePair.Create(x, args[x])));
+      var sp = services.BuildServiceProvider();
+      fakeConfig = sp.GetRequiredService<IOptions<WebDriverConfig>>().Value;
+      WebDriverFactory.AddDriverBuilder("fake-webdriver", (c, dd) => fakeWebDriver);
     }
 
     [TearDown]
@@ -33,13 +37,10 @@ namespace Microcelium.Testing.Selenium
     }
 
     [Test]
-    public async Task BrowserIsAlwaysDisposed()
+    public void BrowserIsAlwaysDisposed()
     {
-      var (driver, exceptionInfo) = WebDriverFactory.CreateAndInitialize(fakeConfig, (cfg, x) => { });
-      using (driver)
-      {
-        var i = 1;
-      }
+      var (driver, __) = WebDriverFactory.CreateAndInitialize(fakeConfig, null, (_, __) => { });
+      using (driver) { }
 
       fakeWebDriver.Received().Dispose();
     }

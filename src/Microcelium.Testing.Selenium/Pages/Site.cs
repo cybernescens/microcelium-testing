@@ -9,36 +9,42 @@ namespace Microcelium.Testing.Selenium.Pages
     private static readonly Type WebPageType = typeof(IWebPage);
     private static readonly Type HasRelativePathType = typeof(IHaveRelativePath);
     private Uri baseAddress;
+    private WebDriverConfig config;
     private IWebDriver driver;
-    private IWebDriverConfig config;
     private ILogger log;
 
-    void IWebSite.Initialize(IWebDriver d, IWebDriverConfig c, ILogger l)
+    void IWebSite.Initialize(IWebDriver d, WebDriverConfig c, ILogger l)
     {
       if (driver != null)
         throw new InvalidOperationException("Site has already been initialized");
+
       driver = d;
       config = c;
       log = l;
-      baseAddress = c.BaseUrl;
+      baseAddress = c.GetBaseUrl();
     }
 
-    public TPage NavigateToPage<TPage>(string queryString = null) where TPage : IWebPage, IHaveRelativePath, new() =>
-      (TPage)NavigateToPage(new TPage(), queryString);
+    public TPage NavigateToPage<TPage>(string queryString = null)
+      where TPage : IWebPage, IHaveRelativePath, new() =>
+      (TPage) NavigateToPage(new TPage(), queryString);
 
     public IWebPage NavigateToPage(Type pageType, string queryString = null) =>
       !WebPageType.IsAssignableFrom(pageType)
-        ? throw new InvalidOperationException($"Page type '{pageType}' does not implement '{WebPageType}' or inherit from '{typeof(PageBase)}'")
+        ? throw new InvalidOperationException(
+          $"Page type '{pageType}' does not implement '{WebPageType}' or inherit from '{typeof(PageBase)}'")
         : !HasRelativePathType.IsAssignableFrom(pageType)
           ? throw new InvalidOperationException($"Page type '{pageType}' does not implement '{HasRelativePathType}'")
           : pageType.GetConstructor(new Type[0]) == null
             ? throw new InvalidOperationException($"Page type '{pageType}' has no default constructor")
-            : NavigateToPage((IWebPage)Activator.CreateInstance(pageType), queryString);
-
+            : NavigateToPage((IWebPage) Activator.CreateInstance(pageType), queryString);
 
     private IWebPage NavigateToPage(IWebPage page, string queryString = null)
     {
-      driver.Navigate().GoToUrl(new Uri(baseAddress, $"{((IHaveRelativePath)page).RelativePath}{(queryString == null ? "" : $"?{queryString}")}"));
+      driver.Navigate().GoToUrl(
+        new Uri(
+          baseAddress,
+          $"{((IHaveRelativePath) page).RelativePath}{(queryString == null ? "" : $"?{queryString}")}"));
+
       page.Initialize(driver, config, log);
       return page;
     }

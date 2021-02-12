@@ -18,8 +18,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".project", ".project", "{07
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".build", ".build", "{2ED375EA-32FC-4CB7-967D-817445E34BD1}"
 	ProjectSection(SolutionItems) = preProject
-		..\build.bat = ..\build.bat
 		..\Build.fsx = ..\Build.fsx
+		..\Directory.Build.props = ..\Directory.Build.props
 	EndProjectSection
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microcelium.Testing.Selenium", "Microcelium.Testing.Selenium\Microcelium.Testing.Selenium.csproj", "{22FDF7C5-5FE5-4118-BF29-56F7E73ACD60}"
@@ -31,12 +31,6 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".tests", ".tests", "{7714005F-E2C2-4F0D-B66C-A9CBA680D1C8}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microcelium.Testing.Ninject.NSubstitute", "Microcelium.Testing.Ninject.NSubstitute\Microcelium.Testing.Ninject.NSubstitute.csproj", "{66A7285C-0DB7-43FB-9CF4-FD4F24069112}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microcelium.Testing.AspNet.Tests", "Microcelium.Testing.AspNet.Tests\Microcelium.Testing.AspNet.Tests.csproj", "{27CB792E-6DFF-4702-AA85-F301A52DB1B6}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microcelium.Testing.AspNet.Mvc", "Microcelium.Testing.AspNet.Mvc\Microcelium.Testing.AspNet.Mvc.csproj", "{5FADE03A-9DDC-4BE1-A682-77F0FC796BBA}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microcelium.Testing.AspNet.WebApi", "Microcelium.Testing.AspNet.WebApi\Microcelium.Testing.AspNet.WebApi.csproj", "{436C3F17-3585-4B06-9E5A-8A298A2D8ACD}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microcelium.Testing.NUnit.NHibernate", "Microcelium.Testing.NUnit.NHibernate\Microcelium.Testing.NUnit.NHibernate.csproj", "{34089DEB-234D-4ADA-9B13-B67C415A43BF}"
 EndProject
@@ -55,6 +49,8 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microcelium.Testing.Ninject.Moq", "Microcelium.Testing.Ninject.Moq\Microcelium.Testing.Ninject.Moq.csproj", "{614D19BC-441E-4CDA-8021-CD669CB23D09}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microcelium.Testing.Windsor.Moq", "Microcelium.Testing.WIndsor.Moq\Microcelium.Testing.Windsor.Moq.csproj", "{87B160CE-5A73-426F-B72E-467867B757CA}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microcelium.Testing.NUnit.EntityFramework", "Microcelium.Testing.NUnit.EntityFramework\Microcelium.Testing.NUnit.EntityFramework.csproj", "{55C27FE0-B223-4624-B55C-11052C8A7942}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -86,18 +82,6 @@ Global
 		{66A7285C-0DB7-43FB-9CF4-FD4F24069112}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{66A7285C-0DB7-43FB-9CF4-FD4F24069112}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{66A7285C-0DB7-43FB-9CF4-FD4F24069112}.Release|Any CPU.Build.0 = Release|Any CPU
-		{27CB792E-6DFF-4702-AA85-F301A52DB1B6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{27CB792E-6DFF-4702-AA85-F301A52DB1B6}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{27CB792E-6DFF-4702-AA85-F301A52DB1B6}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{27CB792E-6DFF-4702-AA85-F301A52DB1B6}.Release|Any CPU.Build.0 = Release|Any CPU
-		{5FADE03A-9DDC-4BE1-A682-77F0FC796BBA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{5FADE03A-9DDC-4BE1-A682-77F0FC796BBA}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{5FADE03A-9DDC-4BE1-A682-77F0FC796BBA}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{5FADE03A-9DDC-4BE1-A682-77F0FC796BBA}.Release|Any CPU.Build.0 = Release|Any CPU
-		{436C3F17-3585-4B06-9E5A-8A298A2D8ACD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{436C3F17-3585-4B06-9E5A-8A298A2D8ACD}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{436C3F17-3585-4B06-9E5A-8A298A2D8ACD}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{436C3F17-3585-4B06-9E5A-8A298A2D8ACD}.Release|Any CPU.Build.0 = Release|Any CPU
 		{34089DEB-234D-4ADA-9B13-B67C415A43BF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{34089DEB-234D-4ADA-9B13-B67C415A43BF}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{34089DEB-234D-4ADA-9B13-B67C415A43BF}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -134,13 +118,16 @@ Global
 		{87B160CE-5A73-426F-B72E-467867B757CA}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{87B160CE-5A73-426F-B72E-467867B757CA}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{87B160CE-5A73-426F-B72E-467867B757CA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{55C27FE0-B223-4624-B55C-11052C8A7942}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{55C27FE0-B223-4624-B55C-11052C8A7942}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{55C27FE0-B223-4624-B55C-11052C8A7942}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{55C27FE0-B223-4624-B55C-11052C8A7942}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{12629A33-9C1F-4764-953D-79E0FD5D18E0} = {7714005F-E2C2-4F0D-B66C-A9CBA680D1C8}
-		{27CB792E-6DFF-4702-AA85-F301A52DB1B6} = {071AD36B-F432-4C5D-919A-C4F4A0F259E4}
 		{856070BB-F11F-44B3-A30B-7D5CE4D0CAD3} = {7714005F-E2C2-4F0D-B66C-A9CBA680D1C8}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution

@@ -28,9 +28,9 @@ namespace Microcelium.Testing.Specs
     /// <summary>
     /// After <see cref="CreateSubject"/>, we can perform any custom configuration of our <see cref="Subject"/> (System Under Test)
     /// </summary>
-    /// <param name="createSubject"></param>
+    /// <param name="factory"></param>
     /// <returns></returns>
-    protected virtual TSut Arrange(Func<TSut> createSubject) => createSubject();
+    protected virtual TSut Arrange(Func<TSut> factory) => factory();
 
     /// <summary>
     /// After <see cref="Arrange"/>, this is where we perform the action we are testing against our <see cref="Subject"/> (System Under Test)

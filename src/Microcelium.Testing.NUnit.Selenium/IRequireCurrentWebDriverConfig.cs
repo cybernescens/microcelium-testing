@@ -2,8 +2,14 @@
 
 namespace Microcelium.Testing.NUnit.Selenium
 {
+  /// <summary>
+  /// Test decorator for when access to the <see cref="WebDriverConfig"/> is necessary
+  /// </summary>
   public interface IRequireCurrentWebDriverConfig
   {
-    IWebDriverConfig Config { get; set; }
+    /// <summary>
+    /// The <see cref="WebDriverConfig"/>
+    /// </summary>
+    WebDriverConfig Config { get; set; }
   }
 }

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Linq.Expressions;
 using Microsoft.Extensions.Logging;
 
@@ -16,6 +17,7 @@ namespace Microcelium.Testing
     /// <param name="subject">the subject to be passed to the <paramref name="action"/></param>
     /// <param name="action">the action to perform</param>
     /// <param name="log">log to be logged to</param>
+    [DebuggerNonUserCode]
     public static void Action<TSubject>(TSubject subject, Expression<Action<TSubject>> action, ILogger log = null)
     {
       try
@@ -34,6 +36,7 @@ namespace Microcelium.Testing
     /// </summary>
     /// <param name="action">the action to perform</param>
     /// <param name="log">log to be logged to</param>
+    [DebuggerNonUserCode]
     public static void Action(Expression<Action> action, ILogger log = null)
     {
       try
@@ -52,6 +55,7 @@ namespace Microcelium.Testing
     /// </summary>
     /// <param name="disposable">the disposal</param>
     /// <param name="log">log to be logged to</param>
+    [DebuggerNonUserCode]
     public static void Dispose(IDisposable disposable, ILogger log = null)
     {
       if (disposable == null)
@@ -67,6 +71,7 @@ namespace Microcelium.Testing
     /// <param name="func">the function to execute</param>
     /// <param name="log">log to be logged to</param>
     /// <returns>the result of the <paramref name="func"/></returns>
+    [DebuggerNonUserCode]
     public static TValue Function<TValue>(Expression<Func<TValue>> func, ILogger log = null)
     {
       try

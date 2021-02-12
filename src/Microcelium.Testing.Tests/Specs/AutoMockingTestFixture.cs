@@ -11,11 +11,11 @@ namespace Microcelium.Testing.Specs
   [TestFixture(typeof(NinjectAutoMockingContainer))]
   class AutoMockingTestFixture<TAutoMocker> : AutoMockSpecFor<AutoMockingTestFixture<TAutoMocker>.FakeTestSubject, (int i, string s), TAutoMocker> where TAutoMocker : IAutoMocker, new()
   {
-    protected override FakeTestSubject Arrange(Func<FakeTestSubject> createSubject)
+    protected override FakeTestSubject Arrange(Func<FakeTestSubject> factory)
     {
       ResolveDependency<IFakeDependency>().CreateInteger().Returns(5);
       RegisterDependency<IImplementedDependency, ImplementedDependency>();
-      return base.Arrange(createSubject);
+      return base.Arrange(factory);
     }
 
     protected override (int i, string s) Act(FakeTestSubject subject) => subject.GetResult();

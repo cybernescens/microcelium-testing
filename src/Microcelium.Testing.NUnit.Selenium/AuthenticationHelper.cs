@@ -1,137 +1,76 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.IO;
+using System.Linq;
 using System.Net;
-using System.Net.Http;
-using System.Text;
 using System.Threading.Tasks;
-using System.Xml;
 using FluentAssertions;
-using Microcelium.Testing.AspNetCore.Handlers;
 using Microcelium.Testing.Selenium;
 using Microsoft.Extensions.Logging;
+using OpenQA.Selenium;
+using Cookie = System.Net.Cookie;
 
 namespace Microcelium.Testing.NUnit.Selenium
 {
+  /// <inheritdoc />
   public class AuthenticationHelper : IAuthenticationHelper
   {
-    private readonly CookieContainer authCookies;
+    private readonly ILogger<AuthenticationHelper> _log;
 
-    private readonly IWebDriverConfig config;
-    private readonly ILogger log;
-    private bool initialized;
-
-    public AuthenticationHelper(IWebDriverConfig config, ILogger log)
-    {
-      this.config = config;
-      this.log = log;
-      authCookies = new CookieContainer();
-      initialized = false;
-    }
+    /// <summary>
+    /// Instantiates an <see cref="AuthenticationHelper"/>
+    /// </summary>
+    /// <param name="lf">the <see cref="ILoggerFactory"/></param>
+    public AuthenticationHelper(ILoggerFactory lf) { _log = lf.CreateLogger<AuthenticationHelper>(); }
 
     /// <inheritdoc />
-    public CookieContainer AuthCookies => !initialized ? Initialize() : authCookies;
-
-    private CookieContainer Initialize()
+    public Task<CookieContainer> PerformAuth(IWebDriver drv, WebDriverConfig cfg)
     {
-      log.LogInformation($"Checking that environment `{config.BaseUrl}` is alive...");
+      var host = cfg.GetBaseUrl();
+      var authority = cfg.GetAzureClientAuthority();
+      
+      _log.LogInformation($"Navigating to configured BaseUrl: `{host}`");
 
-      using (var handler = new HttpClientHandler {CookieContainer = authCookies, AllowAutoRedirect = false})
-      using (var client = new HttpClient(new MicroceliumLoggingDelegatingHandler(handler, log)) {BaseAddress = config.BaseUrl})
+      drv.Navigate().GoToUrl(host);
+      var redirected = new Uri(drv.Url);
+
+      if (redirected.Host.Equals(authority.Host))
       {
-        Task.WaitAll(StartSessionAsync(client));
-        Task.WaitAll(PerformAuth(client));
+        _log.LogInformation($"Have been redirected for login to `{redirected}`");
+        drv.FindElement(By.CssSelector("input[type=\"email\"]")).SendKeys(cfg.Username);
+        drv.FindElement(By.CssSelector("input[type=\"submit\"]")).Click();
+        drv.FindElement(By.CssSelector("input[type=\"password\"]")).SendKeys(cfg.Password);
+        drv.FindElement(By.CssSelector("input[value=\"Sign in\"]")).Click();
       }
 
-      log.LogInformation("Environment check complete");
-      initialized = true;
-      return authCookies;
-    }
+      _log.LogInformation($"Logged in and waiting for confiured element by CSS Selector: `{cfg.LoggedInValidationSelector}`");
+      drv.FindElement(By.CssSelector(cfg.LoggedInValidationSelector));
 
-    private async Task StartSessionAsync(HttpClient client)
-    {
-      log.LogInformation($"Checking endpoint '{0}'", client.BaseAddress);
-      using (var result = await client.GetAsync("/").ConfigureAwait(false))
-        result.StatusCode.Should().Be(HttpStatusCode.Redirect, "(Pre-login) Did not receive login redirect to SSO");
-    }
+      var authCookies = new CookieContainer();
+      var cc = new CookieCollection();
+      drv.Manage().Cookies.AllCookies
+        .Where(x => x.Domain.Contains(host.Host, StringComparison.InvariantCultureIgnoreCase))
+        .Select(
+          x => {
+            var cookie = new Cookie {
+              Domain = x.Domain,
+              Name = x.Name,
+              Value = x.Value,
+              Path = x.Path
+            };
 
-    private async Task PerformAuth(HttpClient client)
-    {
-      var jwtToken = await GeJwtTokenAsync(client).ConfigureAwait(false);
+            if (x.Expiry.HasValue)
+              cookie.Expires = x.Expiry.Value;
 
-      using (var writer = new StringWriterWithEncoding(Encoding.UTF8))
-      using (var xmlWriter = XmlWriter.Create(writer, new XmlWriterSettings {Encoding = Encoding.UTF8}))
-      {
-        var bytes = Encoding.UTF8.GetBytes(jwtToken);
-        xmlWriter.WriteStartElement(
-          "wsse",
-          "BinarySecurityToken",
-          "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd");
-        xmlWriter.WriteAttributeString("ValueType", null, "urn:ietf:params:oauth:token-type:jwt");
-        xmlWriter.WriteAttributeString(
-          "EncodingType",
-          null,
-          "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-soap-message-security-1.0#Base64Binary");
-        xmlWriter.WriteBase64(bytes, 0, bytes.Length);
-        xmlWriter.WriteEndElement();
+            return cookie;
+          })
+        .ToList()
+        .ForEach(x => cc.Add(x));
 
-        xmlWriter.Flush();
-        writer.Flush();
-        var token = Uri.EscapeDataString(writer.ToString());
+      var cookieNames = cc.Select(x => x.Name).Aggregate((acc, x) => $"{acc}\r\n\t{x}");
+      _log.LogInformation($"Returning all cooke information in total there are `{cc.Count}` cookies.");
+      _log.LogInformation($"Cookie Names include: \r\n\t{cookieNames}");
 
-        using (var response = await client.PostAsync(
-            "/",
-            new FormUrlEncodedContent(
-              new[]
-                {
-                  new KeyValuePair<string, string>("wresult", token),
-                  new KeyValuePair<string, string>("wa", "wsignin1.0"),
-                  new KeyValuePair<string, string>("wctx", "rm=0&id=passive&ru=%2f")
-                }))
-          .ConfigureAwait(false))
-        {
-          response.StatusCode.Should().Be(HttpStatusCode.Redirect, "(Post-login) Did not like our generated auth-cookie ");
-          response.Headers.Location.Should().Be("/", "(Post-login) Did not receive original url root redirect");
-        }
-
-        using (var response = await client.GetAsync(config.RelativeLoginUrl).ConfigureAwait(false))
-          response.EnsureSuccessStatusCode();
-      }
-    }
-
-    private async Task<string> GeJwtTokenAsync(HttpClient client)
-    {
-      using (var response = await client.GetAsync("/").ConfigureAwait(false))
-      {
-        response.StatusCode.Should().Be(HttpStatusCode.Redirect, "(Pre-login) Should have received redirect to SSO");
-        var context = response.Headers.Location.ParseQueryString().Get("microceliumctx");
-
-        using (var tokenResponse = await client.PostAsync(
-            response.Headers.Location,
-            new FormUrlEncodedContent(
-              new Dictionary<string, string>
-                {
-                  {"username", config.Username},
-                  {"password", config.Password},
-                  {"scope", context}
-                }))
-          .ConfigureAwait(false))
-        {
-          tokenResponse.StatusCode.Should().Be(HttpStatusCode.OK, "(Handshake) Did not like credentials");
-          var token = await tokenResponse.Content.ReadAsAsync<dynamic>().ConfigureAwait(false);
-          return (string)token.access_token;
-        }
-      }
-    }
-
-    private class StringWriterWithEncoding : StringWriter
-    {
-      public StringWriterWithEncoding(Encoding encoding)
-      {
-        Encoding = encoding;
-      }
-
-      public override Encoding Encoding { get; }
+      authCookies.Add(cc);
+      return Task.FromResult(authCookies);
     }
   }
 }

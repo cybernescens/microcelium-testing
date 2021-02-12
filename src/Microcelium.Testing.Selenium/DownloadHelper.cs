@@ -18,7 +18,7 @@ namespace Microcelium.Testing.Selenium
       this.log = log;
     }
 
-    public FileInfo WaitForFileDownload(DirectoryInfo directory, string fileMask, TimeSpan timeout)
+    public FileInfo WaitForFileDownload(string directory, string fileMask, TimeSpan timeout)
     {
       var loops = timeout.TotalSeconds;
       return webDriver.WaitUntil(
@@ -34,7 +34,7 @@ namespace Microcelium.Testing.Selenium
                 count,
                 loops);
 
-              var matchingFile = FindFile(directory, fileMask);
+              var matchingFile = FindFile(new DirectoryInfo(directory), fileMask);
 
               if (matchingFile != null)
               {

@@ -14,6 +14,6 @@ namespace Microcelium.Testing.Selenium.Pages
     /// <param name="driver">the <see cref="IWebDriver"/></param>
     /// <param name="config"></param>
     /// <param name="log"></param>
-    void Initialize(IWebDriver driver, IWebDriverConfig config, ILogger log);
+    void Initialize(IWebDriver driver, WebDriverConfig config, ILogger log);
   }
 }

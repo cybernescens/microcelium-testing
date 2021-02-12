@@ -6,7 +6,7 @@ namespace Microcelium.Testing.Selenium.Pages
 {
   public interface IWebSite
   {
-    void Initialize(IWebDriver driver, IWebDriverConfig baseAddress, ILogger log);
+    void Initialize(IWebDriver driver, WebDriverConfig baseAddress, ILogger log);
     TPage NavigateToPage<TPage>(string queryString = null) where TPage : IWebPage, IHaveRelativePath, new();
   }
 

@@ -6,7 +6,7 @@ using Serilog;
 
 [SetUpFixture]
 [SuppressMessage("ReSharper", "CheckNamespace")]
-public class LoggingSetup : IConfigureLogging
+public class LoggingSetup : IManageLogging
 {
   [OneTimeSetUp]
   public void Initialize()

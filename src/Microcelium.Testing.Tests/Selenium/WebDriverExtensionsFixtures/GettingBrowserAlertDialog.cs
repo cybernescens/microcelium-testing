@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Generic;
 using System.Collections.Specialized;
+using System.Linq;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Microcelium.Testing.Net;
@@ -8,7 +10,9 @@ using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using NUnit.Framework;
 using OpenQA.Selenium;
 
@@ -17,34 +21,35 @@ namespace Microcelium.Testing.Selenium.WebDriverExtensionsFixtures
   [Parallelizable(ParallelScope.Fixtures)]
   internal class GettingBrowserAlertDialog : IRequireLogger
   {
+    private ILogger log;
     private string url;
     private IWebDriver webDriver;
     private IWebHost webHost;
-    private ILogger log;
 
     [OneTimeSetUp]
-    public async Task SetUp()
+    public void SetUp()
     {
-      this.log = this.CreateLogger();
+      log = this.CreateLogger();
+      var services = new ServiceCollection();
       var args = new NameValueCollection();
       url = $"http://localhost:{TcpPort.NextFreePort()}";
-      args.Add("selenium.baseUrl", url);
+      args.Add("BaseUrl", url);
 
-      var browserConfig = WebDriver
-        .Configure(cfg => cfg.WithDefaultOptions().Providers(x => args[x]), log)
-        .Build();
+      services.AddInMemoryWebDriverConfig(args.Keys.Cast<string>().Select(x => KeyValuePair.Create(x, args[x])));
+      var sp = services.BuildServiceProvider();
+      var browserConfig = sp.GetRequiredService<IOptions<WebDriverConfig>>().Value;
 
       webHost = WebHost.Start(
         url,
         router => router
           .MapGet(
             "",
-            (req, res, data) =>
-              {
-                res.ContentType = "text/html; charset=utf-8";
-                return res.WriteAsync(
-                  "<html><body><script type=\"text/javascript\">alert('Hello! I am an alert box!');</script></body></html>");
-              }));
+            (req, res, data) => {
+              res.ContentType = "text/html; charset=utf-8";
+              return res.WriteAsync(
+                "<html><body><script type=\"text/javascript\">alert('Hello! I am an alert box!');</script></body></html>");
+            }));
+
       webDriver = WebDriverFactory.Create(browserConfig);
     }
 

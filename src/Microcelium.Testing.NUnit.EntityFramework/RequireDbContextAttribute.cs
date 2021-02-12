@@ -1,23 +1,23 @@
 ﻿using System;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
-using NHibernate;
 using NUnit.Framework;
 using NUnit.Framework.Interfaces;
 
-namespace Microcelium.Testing.NUnit.NHibernate
+namespace Microcelium.Testing.NUnit.EntityFramework
 {
   /// <summary>
-  ///   Used to decorate a class to provide NHibernate support / access.
+  ///   Used to decorate a class to provide EntityFramework support / access.
   ///   When attached to a class then fires at the beginning and end of
   ///   running the suite. When attached to a method, fires at the start
   ///   and end of that method
   /// </summary>
   [AttributeUsage(AttributeTargets.Class | AttributeTargets.Interface)]
-  public class RequireSessionFactoryAttribute :
-    Attribute,
-    ITestAction,
+  public class RequireDbContextAttribute : 
+    Attribute, 
+    ITestAction, 
     IRequireLogger,
     IManageServiceCollection,
     IRequireServicesCollection
@@ -29,25 +29,25 @@ namespace Microcelium.Testing.NUnit.NHibernate
     /// <inheritdoc />
     public void BeforeTest(ITest test)
     {
-      var fixture = GetRequireSessionFactoryFromFixture(test);
+      var fixture = GetRequireDbContextFromFixture(test);
       var services = this.GetServiceCollection();
       log = this.CreateLogger();
 
       var configProvider = test.Fixture as IProvideServiceCollectionConfiguration;
       configProvider?.Configure(services);
 
-      services.TryAddSingleton(fixture.SessionFactoryManager);
+      services.TryAddSingleton(fixture.DbContextManager);
       services.TryAddSingleton(
         sp => {
           var start = DateTime.Now;
-          log.LogInformation("Initializing Session Factory...");
-          var sf = sp.GetRequiredService<ISessionFactoryManager>().Initialize();
-          log.LogInformation($"SessionFactory initialized, took {(DateTime.Now - start).TotalSeconds:n2}s");
+          log.LogInformation("Initializing IDbContextManager...");
+          var sf = sp.GetRequiredService<IDbContextManager>().Initialize();
+          log.LogInformation($"IDbContextManager initialized, took {(DateTime.Now - start).TotalSeconds:n2}s");
           return sf;
         });
 
-      services.TryAddScoped(sp => sp.GetRequiredService<ISessionFactoryManager>().SessionProvider);
-      services.TryAddScoped(sp => sp.GetRequiredService<Func<ISession>>()());
+      services.TryAddScoped(sp => sp.GetRequiredService<IDbContextManager>().ContextProvider);
+      services.TryAddScoped(sp => sp.GetRequiredService<Func<DbContext>>()());
 
       provider = this.BuildServiceProvider();
 
@@ -55,7 +55,7 @@ namespace Microcelium.Testing.NUnit.NHibernate
       {
         log.LogInformation("Invoking SetupData");
         using var pre = provider.CreateScope();
-        using var session = provider.GetRequiredService<ISession>();
+        using var session = provider.GetRequiredService<DbContext>();
         data.SetupData(session);
       }
 
@@ -71,22 +71,21 @@ namespace Microcelium.Testing.NUnit.NHibernate
       {
         log.LogInformation("Invoking SetupData");
         using var post = provider.CreateScope();
-        using var session = provider.GetRequiredService<ISession>();
+        using var session = provider.GetRequiredService<DbContext>();
         data.CleanupData(session);
       }
 
-      provider.GetRequiredService<ISessionFactory>()?.Dispose();
-      provider.GetRequiredService<ISessionFactoryManager>()?.Dispose();
+      provider.GetRequiredService<IDbContextManager>()?.Dispose();
     }
 
     /// <inheritdoc />
-    public ActionTargets Targets => ActionTargets.Suite;
+    public ActionTargets Targets { get; }
 
-    private IRequireSessionFactory GetRequireSessionFactoryFromFixture(ITest test) =>
-      test.Fixture is not IRequireSessionFactory requireSessionFactory
+    private IRequireDbContext GetRequireDbContextFromFixture(ITest test)
+      => test.Fixture is not IRequireDbContext requireDbContext
         ? throw new Exception(
-          $"Test should implement interface '{typeof(IRequireSessionFactory).FullName}'" +
+          $"Test should implement interface '{typeof(IRequireDbContext).FullName}'" + 
           $" instead of using the attribute '{GetType().FullName}'")
-        : requireSessionFactory;
+        : requireDbContext;
   }
 }

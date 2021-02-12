@@ -1,11 +1,15 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Drawing;
+using System.Linq;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Microcelium.Testing.Net;
 using Microcelium.Testing.NUnit;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using NSubstitute;
 using NUnit.Framework;
 using OpenQA.Selenium;
@@ -24,50 +28,47 @@ namespace Microcelium.Testing.Selenium
     }
 
     [Test]
-    public async Task CreatesAChromeDriver()
+    public void CreatesAChromeDriver()
     {
+      var services = new ServiceCollection();
       var args = new NameValueCollection();
-      args.Add("selenium.baseUrl", $"http://localhost:{TcpPort.NextFreePort()}");
-      var browserConfig = WebDriver
-        .Configure(cfg => cfg.WithDefaultOptions().Providers(x => args[x]), log)
-        .Build();
+      args.Add("BaseUrl", $"http://localhost:{TcpPort.NextFreePort()}");
+      services.AddInMemoryWebDriverConfig(args.Keys.Cast<string>().Select(x => KeyValuePair.Create(x, args[x])));
+      var sp = services.BuildServiceProvider();
+      var browserConfig = sp.GetRequiredService<IOptions<WebDriverConfig>>().Value;
 
-      using (var driver = WebDriverFactory.Create(browserConfig))
-      {
-        driver.Should().BeOfType<ChromeDriver>();
-      }
+      using var driver = WebDriverFactory.Create(browserConfig);
+      driver.Should().BeOfType<ChromeDriver>();
     }
 
     [Test]
-    public async Task SetsBrowserSize()
+    public void SetsBrowserSize()
     {
+      var services = new ServiceCollection();
       var args = new NameValueCollection();
-      args.Add("webdriver.browser.size", "1280,1024");
-      args.Add("selenium.baseUrl", $"http://localhost:{TcpPort.NextFreePort()}");
-      var browserConfig = WebDriver
-        .Configure(cfg => cfg.WithDefaultOptions().Providers(x => args[x]), log)
-        .Build();
+      args.Add("BrowserSize", "1280,1024");
+      args.Add("BaseUrl", $"http://localhost:{TcpPort.NextFreePort()}");
+      services.AddInMemoryWebDriverConfig(args.Keys.Cast<string>().Select(x => KeyValuePair.Create(x, args[x])));
+      var sp = services.BuildServiceProvider();
+      var browserConfig = sp.GetRequiredService<IOptions<WebDriverConfig>>().Value;
 
-      using (var driver = WebDriverFactory.Create(browserConfig))
-      {
-        driver.Manage().Window.Size.Should().Be(new Size(1280, 1024));
-      }
+      using var driver = WebDriverFactory.Create(browserConfig);
+      driver.Manage().Window.Size.Should().Be(new Size(1280, 1024));
     }
 
     [Test]
     public void ThrowsNotImplementedExceptionForUnknownDriver()
     {
-      Action act = () =>
-        {
-          var args = new NameValueCollection();
-          args.Add("selenium.baseUrl", $"http://localhost:{TcpPort.NextFreePort()}");
-          args.Add("webdriver.browser.type", "no-factory-method");
-
-          var browserConfig = WebDriver
-            .Configure(cfg => cfg.WithDefaultOptions().Providers(x => args[x]), log)
-            .Build();
-          var temp = WebDriverFactory.Create(browserConfig);
-        };
+      Action act = () => {
+        var services = new ServiceCollection();
+        var args = new NameValueCollection();
+        args.Add("BaseUrl", $"http://localhost:{TcpPort.NextFreePort()}");
+        args.Add("BrowserType", "no-factory-method");
+        services.AddInMemoryWebDriverConfig(args.Keys.Cast<string>().Select(x => KeyValuePair.Create(x, args[x])));
+        var sp = services.BuildServiceProvider();
+        var browserConfig = sp.GetRequiredService<IOptions<WebDriverConfig>>().Value;
+        var temp = WebDriverFactory.Create(browserConfig);
+      };
 
       act
         .Should()

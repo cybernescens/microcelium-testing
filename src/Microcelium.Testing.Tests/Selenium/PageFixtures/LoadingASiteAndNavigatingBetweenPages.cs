@@ -1,6 +1,7 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Collections.Specialized;
-using System.Threading.Tasks;
+using System.Linq;
 using FluentAssertions;
 using Microcelium.Testing.Net;
 using Microcelium.Testing.NUnit;
@@ -9,7 +10,9 @@ using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using NUnit.Framework;
 using OpenQA.Selenium;
 
@@ -18,41 +21,41 @@ namespace Microcelium.Testing.Selenium.PageFixtures
   [Parallelizable(ParallelScope.Fixtures)]
   internal class LoadingASiteAndNavigatingBetweenPages : IRequireLogger
   {
-    private IWebDriverConfig browserConfig;
+    private WebDriverConfig browserConfig;
+    private ILogger log;
     private Uri url;
     private IWebDriver webDriver;
     private IWebHost webHost;
-    private ILogger log;
 
     [OneTimeSetUp]
     public void SetUp()
     {
-      this.log = this.CreateLogger();
+      log = this.CreateLogger();
+      var services = new ServiceCollection();
       var args = new NameValueCollection();
       url = new Uri($"http://localhost:{TcpPort.NextFreePort()}");
-      args.Add("selenium.baseUrl", url.ToString());
+      args.Add("BaseUrl", url.ToString());
 
-      browserConfig = WebDriver
-        .Configure(cfg => cfg.WithDefaultOptions().Providers(x => args[x]), log)
-        .Build();
+      services.AddInMemoryWebDriverConfig(args.Keys.Cast<string>().Select(x => KeyValuePair.Create(x, args[x])));
+      var sp = services.BuildServiceProvider();
+      browserConfig = sp.GetRequiredService<IOptions<WebDriverConfig>>().Value;
 
       webHost = WebHost.Start(
         url.ToString(),
         router => router
           .MapGet(
             "/page1",
-            (_, res, __) =>
-              {
-                res.ContentType = "text/html";
-                return res.WriteAsync("<body><a href='page2'>Page 2</a></body>");
-              })
+            (_, res, __) => {
+              res.ContentType = "text/html";
+              return res.WriteAsync("<body><a href='page2'>Page 2</a></body>");
+            })
           .MapGet(
             "/page2",
-            (_, res, __) =>
-              {
-                res.ContentType = "text/html";
-                return res.WriteAsync("<body><label><input type='radio' />Foo</label></body>");
-              }));
+            (_, res, __) => {
+              res.ContentType = "text/html";
+              return res.WriteAsync("<body><label><input type='radio' />Foo</label></body>");
+            }));
+
       webDriver = WebDriverFactory.Create(browserConfig);
     }
 
@@ -66,15 +69,14 @@ namespace Microcelium.Testing.Selenium.PageFixtures
         .Click()
         .Should()
         .BeEquivalentTo(
-          new
-            {
-              LabelText = "Foo",
-              IsSelected = true
-            });
+          new {
+            LabelText = "Foo",
+            IsSelected = true
+          });
 
     [Test]
     public void NavigateToPage1ThenPage2AndClickTheRadioButtonUsingType() =>
-      ((Page1)webDriver
+      ((Page1) webDriver
         .UsingSite<TestSite>(browserConfig, log)
         .NavigateToPage(typeof(Page1)))
       .ClickLinkToPage2()
@@ -82,11 +84,10 @@ namespace Microcelium.Testing.Selenium.PageFixtures
       .Click()
       .Should()
       .BeEquivalentTo(
-        new
-          {
-            LabelText = "Foo",
-            IsSelected = true
-          });
+        new {
+          LabelText = "Foo",
+          IsSelected = true
+        });
 
     [OneTimeTearDown]
     public void TearDown()
@@ -97,8 +98,7 @@ namespace Microcelium.Testing.Selenium.PageFixtures
 
     private class TestSite : Site
     {
-      public Page1 NavigateToPage1()
-        => NavigateToPage<Page1>();
+      public Page1 NavigateToPage1() => NavigateToPage<Page1>();
     }
 
     private class Page1 : PageBase, IHaveRelativePath

@@ -19,7 +19,7 @@ namespace Microcelium.Testing.Selenium.Pages
     /// <summary>
     /// The configuration object
     /// </summary>
-    public IWebDriverConfig Config { get; private set; }
+    public WebDriverConfig Config { get; private set; }
 
     /// <summary>
     /// if desired, a the configured timeout for the page
@@ -31,7 +31,7 @@ namespace Microcelium.Testing.Selenium.Pages
     /// </summary>
     /// <param name="driver"></param>
     /// <param name="config"></param>
-    public virtual void Initialize(IWebDriver driver, IWebDriverConfig config, ILogger log)
+    public virtual void Initialize(IWebDriver driver, WebDriverConfig config, ILogger log)
     {
       if (Driver != null)
         throw new InvalidOperationException("Page has already been initialized");
@@ -93,7 +93,7 @@ namespace Microcelium.Testing.Selenium.Pages
     /// <summary>
     /// Waits for the <see cref="PageLoadedIdentifier"/> to load before continuing
     /// </summary>
-    public void WaitForPageToLoad() => Driver.WaitForElementToBeVisible(PageLoadedIdentifier);
+    public void WaitForPageToLoad() => Driver.FindElement(PageLoadedIdentifier);
 
     /// <summary>
     /// A unique Selector for the page

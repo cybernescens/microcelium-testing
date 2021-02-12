@@ -4,6 +4,6 @@ namespace Microcelium.Testing
 {
   public interface IRequireDownloadDirectory
   {
-    DirectoryInfo DownloadDirectory { get; set; }
+    string DownloadDirectory { get; set; }
   }
 }

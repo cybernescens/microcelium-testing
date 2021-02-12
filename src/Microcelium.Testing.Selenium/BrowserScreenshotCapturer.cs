@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Drawing;
 using System.IO;
 using System.Linq;
@@ -23,12 +24,20 @@ namespace Microcelium.Testing.Selenium
 
     public string SaveScreenshotForEachTab(string filePath)
     {
-      log.LogInformation("Saving screen shoot to path:\n{0}", filePath);
+      log.LogInformation("Saving screen shot to path:\n{0}", filePath);
 
       try
       {
-        var mergeImages = MergeImages(GetImageForAllOpenTabs(webDriver));
         var fullPath = Path.Combine(Directory.GetCurrentDirectory(), filePath);
+        var directory = !string.IsNullOrEmpty(Path.GetExtension(filePath))
+          ? new FileInfo(fullPath).Directory
+          : new DirectoryInfo(fullPath);
+
+        if (directory.Exists)
+          directory.Delete(true);
+
+        directory.Create();
+        var mergeImages = MergeImages(GetImageForAllOpenTabs(webDriver));
         mergeImages.Save(fullPath);
         log.LogInformation($"Screen shot saved to:\n{fullPath}");
         return fullPath;
@@ -58,7 +67,7 @@ namespace Microcelium.Testing.Selenium
         var viewportWidth = webDriver.ExecuteScript<int>("return document.documentElement.clientWidth;");
         var viewportHeight = webDriver.ExecuteScript<int>("return document.documentElement.clientHeight;");
 
-        var rectangles = SplitDcumentIntoRectangles(totalHeight, viewportHeight, totalWidth, viewportWidth);
+        var rectangles = SplitDocumentIntoRectangles(totalHeight, viewportHeight, totalWidth, viewportWidth);
 
         var stitchedImage = new Bitmap(totalWidth, totalHeight);
         foreach (var rectangle in rectangles)
@@ -88,7 +97,7 @@ namespace Microcelium.Testing.Selenium
       return null;
     }
 
-    private static IEnumerable<Rectangle> SplitDcumentIntoRectangles(
+    private static IEnumerable<Rectangle> SplitDocumentIntoRectangles(
       int totalHeight,
       int viewportHeight,
       int totalWidth,
@@ -152,7 +161,7 @@ namespace Microcelium.Testing.Selenium
 
     private IEnumerable<Image> GetImageForAllOpenTabs(IWebDriver webDriver)
     {
-      foreach (var id in webDriver.WindowHandles)
+      foreach (var id in webDriver?.WindowHandles ?? new ReadOnlyCollection<string>(new string[0]))
       {
         webDriver.SwitchTo().Window(id);
         yield return TakeFullScreenScreenshot(webDriver) ?? ScreenshotAsImage(webDriver);

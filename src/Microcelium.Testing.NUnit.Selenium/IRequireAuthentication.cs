@@ -1,7 +1,7 @@
 ﻿namespace Microcelium.Testing.NUnit.Selenium
 {
-  public interface IRequireAuthentication
-  {
-    IAuthenticationHelper AuthenticationHelper { get; set; }
-  }
-}
+  /// <summary>
+  ///   Implement this interface when Authorization is necessary
+  /// </summary>
+  public interface IRequireAuthentication { }
+}   

@@ -5,61 +5,75 @@ using System.Runtime.ExceptionServices;
 using System.Text.RegularExpressions;
 using Microcelium.Testing.Selenium;
 using Microcelium.Testing.Selenium.Pages;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using NUnit.Framework;
 using NUnit.Framework.Interfaces;
 using OpenQA.Selenium;
 
 namespace Microcelium.Testing.NUnit.Selenium
 {
-  public class RequiresWebBrowserAttribute : Attribute, ITestAction, IRequireLogger
+  /// <summary>
+  /// Decorates a class and performs all necessary setup and execution of a selenium test
+  /// </summary>
+  public class RequiresWebBrowserAttribute : 
+    Attribute, 
+    ITestAction, 
+    IRequireLogger, 
+    IManageServiceCollection,
+    IRequireServicesCollection
   {
+    /// <summary>
+    /// Screenshot directory
+    /// </summary>
     public const string ScreenshotDirectoryName = "Screenshots";
 
     private static readonly Type RequiresWebType = typeof(IRequireWebSite<>);
-    private static readonly Type RequiresWebTypeConstraintType = typeof(Page<>);
     private IAuthenticationHelper authHelper;
+    private ILogger log;
 
     private IWebDriver webDriver;
-    private ILogger log;
+    private IServiceScope scope;
 
     /// <inheritdoc />
     public void BeforeTest(ITest test)
     {
-      this.log = this.CreateLogger();
+      var services = this.GetServiceCollection();
+      var lf = this.GetLoggerFactory();
+      log = this.CreateLogger();
       var pageType = GetFixturePage(test);
-
-      var configBuilder = test.Fixture as IProvideWebDriverConfigBuilder;
-      var configHolder = test.Fixture as IRequireCurrentWebDriverConfig;
+      
       var authentication = test.Fixture as IRequireAuthentication;
+      var configProvider = test.Fixture as IProvideServiceCollectionConfiguration;
+
+      configProvider?.Configure(services);
+      services.AddWebDriverConfig();
+
+      if (authentication != null)
+        services.TryAddScoped<IAuthenticationHelper, AuthenticationHelper>();
+
+      var sp = this.BuildServiceProvider();
+      this.scope = sp.CreateScope();
+
+      var configHolder = test.Fixture as IRequireCurrentWebDriverConfig;
       var screenshots = test.Fixture as IRequireScreenshots;
       var downloads = test.Fixture as IRequireDownloadDirectory;
 
-      var config =
-        configBuilder?.Builder.Build()
-        ?? WebDriver
-          .Configure(
-            builder =>
-              {
-                builder.WithDefaultOptions();
-                if (downloads != null)
-                  builder.DownloadDirectory(downloads.DownloadDirectory);
-                return builder;
-              }, log)
-          .Build();
-
+      var config = sp.GetRequiredService<IOptions<WebDriverConfig>>().Value;
       if (configHolder != null)
         configHolder.Config = config;
-      
+
       /* lazy initialized */
-      authHelper = new AuthenticationHelper(config, log);
+      authHelper = sp.GetRequiredService<IAuthenticationHelper>();
 
-      var init = authentication != null
-        ? (Action<IWebDriverConfig, IWebDriver, IAuthenticationHelper>) AuthenticatedInitialize
-        : Initialize;
+      var (wd, initializationException) =
+        authentication != null
+          ? WebDriverFactory.CreateAndInitialize(config, downloads?.DownloadDirectory, (cfg, drv) => authHelper.PerformAuth(drv, cfg))
+          : WebDriverFactory.CreateAndInitialize(config, downloads?.DownloadDirectory, (cfg, drv) => drv.Navigate().GoToUrl(cfg.GetBaseUrl()));
 
-      ExceptionDispatchInfo initializationException = null;
-      (webDriver, initializationException) = WebDriverFactory.CreateAndInitialize(config, (cfg, drv) => init(cfg, drv, authHelper));
+      webDriver = wd;
       initializationException?.Throw();
 
       var requiresWebForPageType = RequiresWebType.MakeGenericType(pageType);
@@ -81,60 +95,33 @@ namespace Microcelium.Testing.NUnit.Selenium
       if (currentContext.Result.Outcome.Status == TestStatus.Failed)
         SafelyTry.Action(() => SaveScreenshotForEachTab(currentContext, "_post"));
 
-      SafelyTry.Action(() => webDriver.Close());
-      SafelyTry.Action(() => webDriver.Quit());
-      SafelyTry.Dispose(webDriver);
+      webDriver?.Close();
+      webDriver?.Quit();
+      webDriver?.Dispose();
+      scope?.Dispose();
     }
 
+    /// <summary>
+    /// What should this attribute target
+    /// </summary>
     public ActionTargets Targets => ActionTargets.Default;
 
-    private Page GetPage(Type pageType, IWebDriverConfig config)
-      => (Page)webDriver.UsingSite<Site>(config, log).NavigateToPage(pageType);
+    private Page GetPage(Type pageType, WebDriverConfig config) =>
+      (Page) webDriver.UsingSite<Site>(config, log).NavigateToPage(pageType);
 
     private Type GetFixturePage(ITest testFixture)
     {
-      foreach (var i in testFixture.Fixture.GetType().GetInterfaces())
+      foreach (var i in testFixture.Fixture?.GetType().GetInterfaces() ?? Array.Empty<Type>())
       {
         if (!i.IsGenericType)
           continue;
+
         if (i.GetGenericTypeDefinition() == RequiresWebType)
           return i.GetGenericArguments()[0];
       }
 
       throw new Exception(
         $"Test should implement interface '{RequiresWebType}' instead of using the attribute '{GetType()}'");
-    }
-
-    private static void Initialize(IWebDriverConfig config, IWebDriver driver, IAuthenticationHelper authHelper)
-      => driver.Navigate().GoToUrl(config.BaseUrl);
-
-    private void AuthenticatedInitialize(IWebDriverConfig config, IWebDriver driver, IAuthenticationHelper authHelper)
-    {
-      void ApplyCookiesToWebDriverAndNavigate()
-      {
-        var cc = authHelper.AuthCookies;
-        driver.Manage().Cookies.DeleteAllCookies();
-        cc.GetCookies(config.BaseUrl)
-          .Cast<System.Net.Cookie>()
-          .Select(
-            c =>
-              {
-                if (c.Domain.Contains("localhost"))
-                  c.Domain = null;
-                return c;
-              })
-          .ToList()
-          .ForEach(
-            cookie => driver.Manage()
-              .Cookies.AddCookie(new Cookie(cookie.Name, cookie.Value, cookie.Domain, cookie.Path, null)));
-
-        driver.Navigate().GoToUrl(config.BaseUrl);
-      }
-
-      driver.GoToRelativeUrl(config.BaseUrl + config.RelativeMicroceliumLogoPath);
-      ApplyCookiesToWebDriverAndNavigate();
-      driver.WaitForElementToBeVisible(By.LinkText("Logout"));
-      driver.DefinitivelyWaitForAnyAjax(log, config.PageLoadTimeout);
     }
 
     private void SaveScreenshotForEachTab(TestContext currentContext, string suffix)
@@ -145,10 +132,8 @@ namespace Microcelium.Testing.NUnit.Selenium
       log.LogInformation("Saving screen shoot for test '{0}'", currentContext.Test.FullName);
 
       if (!string.IsNullOrEmpty(path))
-      {
         log.LogInformation(
-            $"##teamcity[publishArtifacts '{Path.Combine(Directory.GetCurrentDirectory(), path)} => SeleniumScreenshots']");
-      }
+          $"##teamcity[publishArtifacts '{Path.Combine(Directory.GetCurrentDirectory(), path)} => SeleniumScreenshots']");
     }
 
     private static string CleanPath(string path)

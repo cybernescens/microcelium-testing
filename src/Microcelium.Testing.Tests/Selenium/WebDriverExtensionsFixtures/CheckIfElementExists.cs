@@ -1,5 +1,6 @@
-﻿using System;
+﻿using System.Collections.Generic;
 using System.Collections.Specialized;
+using System.Linq;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Microcelium.Testing.Net;
@@ -8,6 +9,8 @@ using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using NUnit.Framework;
 using OpenQA.Selenium;
 
@@ -21,27 +24,28 @@ namespace Microcelium.Testing.Selenium.WebDriverExtensionsFixtures
     private IWebHost webHost;
 
     [OneTimeSetUp]
-    public async Task SetUp()
+    public void SetUp()
     {
       var log = this.CreateLogger();
+      var services = new ServiceCollection();
       var args = new NameValueCollection();
       url = $"http://localhost:{TcpPort.NextFreePort()}";
-      args.Add("selenium.baseUrl", url);
+      args.Add("BaseUrl", url);
 
-      var browserConfig = WebDriver
-        .Configure(cfg => cfg.WithDefaultOptions().Providers(x => args[x]), log)
-        .Build();
+      services.AddInMemoryWebDriverConfig(args.Keys.Cast<string>().Select(x => KeyValuePair.Create(x, args[x])));
+      var sp = services.BuildServiceProvider();
+      var browserConfig = sp.GetRequiredService<IOptions<WebDriverConfig>>().Value;
 
       webHost = WebHost.Start(
         url,
         router => router
           .MapGet(
             "",
-            (req, res, data) =>
-              {
-                res.ContentType = "text/html";
-                return res.WriteAsync("<body><div id='Foo' /></body>");
-              }));
+            (req, res, data) => {
+              res.ContentType = "text/html";
+              return res.WriteAsync("<body><div id='Foo' /></body>");
+            }));
+
       webDriver = WebDriverFactory.Create(browserConfig);
     }
 

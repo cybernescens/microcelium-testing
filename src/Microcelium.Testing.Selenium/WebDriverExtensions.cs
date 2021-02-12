@@ -30,7 +30,7 @@ namespace Microcelium
     /// <param name="webDriver"></param>
     /// <param name="baseAddress"></param>
     /// <returns></returns>
-    public static TSite UsingSite<TSite>(this IWebDriver webDriver, IWebDriverConfig config, ILogger log) where TSite : IWebSite, new()
+    public static TSite UsingSite<TSite>(this IWebDriver webDriver, WebDriverConfig config, ILogger log) where TSite : IWebSite, new()
     {
       var site = new TSite();
       site.Initialize(webDriver, config, log);
@@ -134,7 +134,7 @@ namespace Microcelium
     /// <param name="fileMask"></param>
     /// <param name="timeout"></param>
     /// <returns></returns>
-    public static FileInfo WaitForFileDownload(this IWebDriver driver, DirectoryInfo directory, string fileMask, ILogger log, TimeSpan? timeout = null)
+    public static FileInfo WaitForFileDownload(this IWebDriver driver, string directory, string fileMask, ILogger log, TimeSpan? timeout = null)
       => new DownloadHelper(driver, log).WaitForFileDownload(directory, fileMask, timeout ?? TimeSpan.FromSeconds(60));
 
     /// <summary>

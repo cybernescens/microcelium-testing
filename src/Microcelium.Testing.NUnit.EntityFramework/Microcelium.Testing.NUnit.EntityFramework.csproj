@@ -2,16 +2,15 @@
 
   <PropertyGroup>
     <TargetFramework>net5.0</TargetFramework>
-    <RootNamespace>Microcelium.Testing</RootNamespace>
-    <AssemblyName>Microcelium.Testing.Windsor.NSubstitute</AssemblyName>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Castle.Windsor" Version="5.1.1" />
-    <PackageReference Include="NSubstitute" Version="4.2.2" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="5.0.2" />
+    <PackageReference Include="Nunit" Version="3.13.1" />
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Microcelium.Testing.NUnit\Microcelium.Testing.NUnit.csproj" />
     <ProjectReference Include="..\Microcelium.Testing\Microcelium.Testing.csproj" />
   </ItemGroup>
 

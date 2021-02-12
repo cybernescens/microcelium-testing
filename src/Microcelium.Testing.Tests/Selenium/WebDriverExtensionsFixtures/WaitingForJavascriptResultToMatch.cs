@@ -1,11 +1,15 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Collections.Specialized;
+using System.Linq;
 using System.Threading.Tasks;
 using Microcelium.Testing.Net;
 using Microcelium.Testing.NUnit;
 using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using NUnit.Framework;
 
 namespace Microcelium.Testing.Selenium.WebDriverExtensionsFixtures
@@ -14,16 +18,17 @@ namespace Microcelium.Testing.Selenium.WebDriverExtensionsFixtures
   internal class WaitingForJavascriptResultToMatch : IRequireLogger 
   { 
     [Test]
-    public async Task ReturnsTrueForExpectedMatch()
+    public void ReturnsTrueForExpectedMatch()
     {
       var log = this.CreateLogger();
+      var services = new ServiceCollection();
       var args = new NameValueCollection();
       var url = $"http://localhost:{TcpPort.NextFreePort()}";
-      args.Add("selenium.baseUrl", url);
+      args.Add("BaseUrl", url);
 
-      var browserConfig = WebDriver
-        .Configure(cfg => cfg.WithDefaultOptions().Providers(x => args[x]), log)
-        .Build();
+      services.AddInMemoryWebDriverConfig(args.Keys.Cast<string>().Select(x => KeyValuePair.Create(x, args[x])));
+      var sp = services.BuildServiceProvider();
+      var browserConfig = sp.GetRequiredService<IOptions<WebDriverConfig>>().Value;
 
       using (WebHost.Start(
         url,
