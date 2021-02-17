@@ -69,7 +69,7 @@ namespace Microcelium.Testing.Selenium
     {
       var services = new ServiceCollection();
       var args = new NameValueCollection();
-      args.Add("BrowserSize", "1280,1024");
+      args.Add("BrowserSize", "1024,768");
       args.Add("BaseUrl", $"http://localhost:{TcpPort.NextFreePort()}");
 
       ConfigureWebDriver(services, args);
