@@ -64,6 +64,7 @@ namespace Microcelium.Testing.Selenium.PageFixtures
             }));
 
       var page2 = Page.ClickLinkToPage2();
+      await page2.Wait();
       page2.BarLabel.Click();
       page2.RadioButton.GetAttribute("value").Should().BeEquivalentTo("bar");
     }
