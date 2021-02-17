@@ -39,8 +39,8 @@ let version = Version.fromEnvironment ()
 let versionparts = Version.parts version
 let versionstr = Version.toString version
 
+let binDir = Environment.defaultBinDir
 let srcDir = Path.getFullName "./src"
-let binDir = Path.getFullName "./bin"
 let shotsDir = Path.getFullName "./screenshots"
 let selenDir = Path.getFullName "./selenium"
 
@@ -51,6 +51,10 @@ let tests = seq { yield (srcDir, Default) }
     for this specific build, e.g. we're building projects to help with 
     unit and selenium tests *)
 Target.create "Build" (fun _ ->
+  let props = 
+    [("Optimize", "false")
+     ()]
+
    DotNet.build (fun p ->
      { p with
          Configuration = DotNet.BuildConfiguration.Debug
