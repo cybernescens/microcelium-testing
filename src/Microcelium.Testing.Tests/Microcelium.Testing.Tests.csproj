@@ -25,6 +25,7 @@
     <ProjectReference Include="..\Microcelium.Testing.Logging\Microcelium.Testing.Logging.csproj" />
     <ProjectReference Include="..\Microcelium.Testing.Ninject.NSubstitute\Microcelium.Testing.Ninject.NSubstitute.csproj" />
     <ProjectReference Include="..\Microcelium.Testing.NUnit.AspNetCore.TestServer\Microcelium.Testing.NUnit.AspNetCore.TestServer.csproj" />
+    <ProjectReference Include="..\Microcelium.Testing.NUnit.Selenium\Microcelium.Testing.NUnit.Selenium.csproj" />
     <ProjectReference Include="..\Microcelium.Testing.NUnit\Microcelium.Testing.NUnit.csproj" />
     <ProjectReference Include="..\Microcelium.Testing.Selenium\Microcelium.Testing.Selenium.csproj" />
     <ProjectReference Include="..\Microcelium.Testing.Windsor.NSubstitute\Microcelium.Testing.Windsor.NSubstitute.csproj" />

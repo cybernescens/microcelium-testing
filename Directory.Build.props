@@ -9,7 +9,7 @@
     <AllowedOutputExtensionsInPackageBuildOutputFolder>$(AllowedOutputExtensionsInPackageBuildOutputFolder);.pdb;</AllowedOutputExtensionsInPackageBuildOutputFolder>
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
     <EmbedUntrackedSources>true</EmbedUntrackedSources>
-    <Authors>microcelium</Authors>
+    <Authors>microcelium+DataDx</Authors>
     <Copyright>Copyright microcelium @ 2019</Copyright>
     <LangVersion>9</LangVersion>
     <DefineConstants Condition="'$(COMPUTERNAME)' == 'joe-nuc'">$(DefineConstants);DEVELOPER_MACHINE</DefineConstants>

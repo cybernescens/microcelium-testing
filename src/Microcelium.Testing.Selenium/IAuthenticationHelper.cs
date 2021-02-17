@@ -1,9 +1,8 @@
 ﻿using System.Net;
 using System.Threading.Tasks;
-using Microcelium.Testing.Selenium;
 using OpenQA.Selenium;
 
-namespace Microcelium.Testing.NUnit.Selenium
+namespace Microcelium.Testing.Selenium
 {
   /// <summary>
   ///   Assists in Authentication

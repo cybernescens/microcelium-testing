@@ -8,7 +8,7 @@ using NUnit.Framework;
 namespace Microcelium.Testing.SafelyTryFixtures.CallDispose
 {
   [Parallelizable(ParallelScope.None)]
-  internal class DisposingAnObject : IRequireLogValidation, IRequireLogger
+  internal class DisposingAnObject : IRequireLogValidation, IManageLogging, IRequireLogger
   {
     private IDisposable disposable;
 
@@ -17,6 +17,7 @@ namespace Microcelium.Testing.SafelyTryFixtures.CallDispose
     [SetUp]
     public void SetUp()
     {
+      this.AddLogging();
       var log = this.CreateLogger();
       disposable = Substitute.For<IDisposable>();
       SafelyTry.Dispose(disposable, log);

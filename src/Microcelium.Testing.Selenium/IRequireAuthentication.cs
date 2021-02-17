@@ -1,4 +1,4 @@
-﻿namespace Microcelium.Testing.NUnit.Selenium
+﻿namespace Microcelium.Testing.Selenium
 {
   /// <summary>
   ///   Implement this interface when Authorization is necessary

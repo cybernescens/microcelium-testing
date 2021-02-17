@@ -1,73 +1,88 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Linq;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Microcelium.Testing.Net;
 using Microcelium.Testing.NUnit;
+using Microcelium.Testing.NUnit.Selenium;
+using Microcelium.Testing.Selenium.Pages;
 using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using NUnit.Framework;
 using OpenQA.Selenium;
 
 namespace Microcelium.Testing.Selenium.WebDriverExtensionsFixtures
 {
-  [Parallelizable(ParallelScope.Fixtures)]
-  internal class CheckIfElementExists : IRequireLogger
+  [Parallelizable(ParallelScope.None)]
+  internal class CheckIfElementExists : IRequireWebPage<ElementSite, ElementPage>,
+    IProvideServiceCollectionConfiguration
   {
     private string url;
-    private IWebDriver webDriver;
-    private IWebHost webHost;
 
-    [OneTimeSetUp]
-    public void SetUp()
+    public void Configure(IServiceCollection services)
     {
-      var log = this.CreateLogger();
-      var services = new ServiceCollection();
       var args = new NameValueCollection();
       url = $"http://localhost:{TcpPort.NextFreePort()}";
       args.Add("BaseUrl", url);
 
       services.AddInMemoryWebDriverConfig(args.Keys.Cast<string>().Select(x => KeyValuePair.Create(x, args[x])));
-      var sp = services.BuildServiceProvider();
-      var browserConfig = sp.GetRequiredService<IOptions<WebDriverConfig>>().Value;
+      services.AddWebComponents(typeof(ElementSite), typeof(ElementPage));
+    }
 
-      webHost = WebHost.Start(
+    public ElementSite Site { get; set; }
+    public ElementPage Page { get; set; }
+
+    public IWebHost CreateHost()
+    {
+      return WebHost.Start(
         url,
         router => router
           .MapGet(
             "",
             (req, res, data) => {
               res.ContentType = "text/html";
-              return res.WriteAsync("<body><div id='Foo' /></body>");
+              return res.WriteAsync("<body><div class='container'><div id='Foo' /></div></body>");
             }));
-
-      webDriver = WebDriverFactory.Create(browserConfig);
-    }
-
-    [OneTimeTearDown]
-    public void TearDown()
-    {
-      SafelyTry.Dispose(webDriver);
-      SafelyTry.Dispose(webHost);
     }
 
     [Test]
-    public void ReturnsMatchingElement()
+    public async Task ReturnsMatchingElement()
     {
-      webDriver.Navigate().GoToUrl(url);
-      webDriver.ElementExists(By.Id("Foo")).Should().NotBeNull();
+      using var host = CreateHost();
+      Page.Navigate();
+      await Page.Wait();
+      Page.SafeFooElement.Should().NotBeNull();
     }
 
     [Test]
-    public void ReturnsFalseForNoMatchingElement()
+    public async Task ReturnsFalseForNoMatchingElement()
     {
-      webDriver.Navigate().GoToUrl(url);
-      webDriver.ElementExists(By.Id("Bar")).Should().BeNull();
+      using var host = CreateHost();
+      Page.Navigate();
+      await Page.Wait();
+      Page.SafeBarElement.Should().BeNull();
     }
+  }
+
+  internal class ElementSite : WebSite
+  {
+    public ElementSite(IWebDriver driver, IOptions<WebDriverConfig> config) : base(driver, config) { }
+  }
+
+  internal class ElementPage : WebPage<ElementPage>
+  {
+    public ElementPage(IWebSite site, ILoggerFactory lf, TimeSpan? timeout = null) : base(site, lf, timeout) { }
+    public override By LoadedIdentifier => By.CssSelector("div.container");
+    public override string RelativePath => "/";
+
+    public IWebElement SafeFooElement => Parent.Driver.ElementExists(By.Id("Foo"));
+    public IWebElement SafeBarElement => Parent.Driver.ElementExists(By.Id("Bar"));
   }
 }

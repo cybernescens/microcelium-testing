@@ -7,39 +7,51 @@ using System.Threading.Tasks;
 using FluentAssertions;
 using Microcelium.Testing.Net;
 using Microcelium.Testing.NUnit;
+using Microcelium.Testing.NUnit.Selenium;
+using Microcelium.Testing.Selenium.Pages;
 using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using NUnit.Framework;
 using OpenQA.Selenium;
 
 namespace Microcelium.Testing.Selenium
 {
-  [Parallelizable(ParallelScope.Fixtures)]
-  [EnsureCleanDownloadDirectory(@"Downloads", true, ActionTargets.Test)]
-  internal class CreatingAWebDriverThatDownloadsToASpecificDirectory : IRequireDownloadDirectory, IRequireLogger
+  [Parallelizable(ParallelScope.None)]
+  internal class CreatingAWebDriverThatDownloadsToASpecificDirectory :
+    IRequireWebPage<SelfHostedSite, DownloadPage>, 
+    IRequireDownloadDirectory, 
+    IRequireLogger,
+    IProvideServiceCollectionConfiguration
   {
-    public string DownloadDirectory { get; set; }
+    private string url;
 
-    [Test]
-    public void SavesFileToDirectory()
+    public void Configure(IServiceCollection services)
     {
-      var log = this.CreateLogger();
-      var url = $"http://localhost:{TcpPort.NextFreePort()}";
-      var services = new ServiceCollection();
+      url = $"http://localhost:{TcpPort.NextFreePort()}";
       var args = new NameValueCollection();
       args.Add("BaseUrl", url);
       services.AddInMemoryWebDriverConfig(args.Keys.Cast<string>().Select(x => KeyValuePair.Create(x, args[x])));
-      var sp = services.BuildServiceProvider();
-      var browserConfig = sp.GetRequiredService<IOptions<WebDriverConfig>>().Value;
+      services.AddWebComponents(typeof(SelfHostedSite), typeof(DownloadPage));
+    }
 
-      using (WebHost.Start(
+    public SelfHostedSite Site { get; set; }
+    public DownloadPage Page { get; set; }
+
+    [Test]
+    public async Task SavesFileToDirectory()
+    {
+      var log = this.CreateLogger();
+      var dd = this.GetDownloadDirectory();
+
+      using var host = WebHost.Start(
         url,
         router => router
           .MapGet(
-            "",
+            "/",
             (req, res, data) => {
               res.ContentType = "text/html";
               return res.WriteAsync("<a href='download'>download</a>");
@@ -50,20 +62,39 @@ namespace Microcelium.Testing.Selenium
               res.ContentType = "application/octet-stream";
               res.Headers.Append("Content-Disposition", @"attachment; filename =""download.txt""");
               return res.WriteAsync("file content");
-            })))
-      using (var driver = WebDriverFactory.Create(browserConfig, DownloadDirectory))
-      {
-        driver.Navigate().GoToUrl(url);
-        driver.FindElement(By.LinkText("download")).Click();
-        var fileInfo = driver.WaitForFileDownload(
-          DownloadDirectory,
-          "download.txt",
-          log,
-          TimeSpan.FromSeconds(10));
+            }));
 
-        fileInfo.Exists.Should()
-          .BeTrue("file '{0}' should exist", fileInfo.FullName);
-      }
+      Page.Navigate();
+
+      await Page.Wait();
+      var fileInfo = Page.Download(dd);
+
+      fileInfo.Exists.Should()
+        .BeTrue("file '{0}' should exist", fileInfo.FullName);
+    }
+  }
+
+  internal class SelfHostedSite : WebSite
+  {
+    public SelfHostedSite(IWebDriver driver, IOptions<WebDriverConfig> config) : base(driver, config) { }
+  }
+
+  internal class DownloadPage : WebPage<DownloadPage>
+  {
+    private readonly ILogger<DownloadPage> _log;
+
+    public DownloadPage(IWebSite site, ILoggerFactory lf, TimeSpan? timeout = null) : base(site, lf, timeout)
+    {
+      _log = lf.CreateLogger<DownloadPage>();
+    }
+
+    public override By LoadedIdentifier => By.CssSelector("a[href=\"download\"]");
+    public override string RelativePath => "/";
+
+    public FileInfo Download(string dd)
+    {
+      Parent.Driver.FindElement(LoadedIdentifier).Click();
+      return Parent.Driver.WaitForFileDownload(dd, "download.txt", _log);
     }
   }
 }

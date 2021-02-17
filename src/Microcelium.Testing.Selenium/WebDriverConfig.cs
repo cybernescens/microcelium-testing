@@ -1,7 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
-using System.Drawing;
 using System.Linq;
 using System.Security;
 using Microsoft.Extensions.Configuration;
@@ -12,31 +10,23 @@ using OpenQA.Selenium.Chrome;
 
 namespace Microcelium.Testing.Selenium
 {
-  public class WebDriverConfig 
+  /// <summary>
+  ///   Configuration options for Selenium
+  /// </summary>
+  public class WebDriverConfig
   {
-    /// <summary>
-    /// Configuration parameter:
-    /// <c>webdriver.browser.type</c>
-    /// </summary>
-    public string BrowserType { get; set; } = typeof(ChromeDriver).FullName;
-
-    private string BrowserSize { get; set; } = "1600,1200";
     public static readonly string SectionName = "selenium";
 
     /// <summary>
-    ///   Configuration parameter: <c>webdriver.browser.type</c>
+    ///   Configuration parameter:
+    ///   <c>webdriver.browser.type</c>
     /// </summary>
-    public (int Width, int Height) GetBrowserSize()
-    {
-      if (string.IsNullOrEmpty(BrowserSize))
-        return (1600, 1200);
+    public string BrowserType { get; set; } = typeof(ChromeDriver).FullName;
 
-      var parts = BrowserSize.Split(',').Select(x => int.Parse(x.Trim())).ToArray();
-      if (parts.Length != 2)
-        throw new InvalidOperationException("browserSize does not appear to be valid. Should be 'width,height'");
-
-      return (parts[0], parts[1]);
-    }
+    /// <summary>
+    /// The browser size
+    /// </summary>
+    public string BrowserSize { get; set; } = "1600,1200";
 
     /// <summary>
     ///   Configuration parameter: <c>webdriver.browser.runheadless</c>
@@ -61,77 +51,86 @@ namespace Microcelium.Testing.Selenium
     public TimeSpan BrowserTimeout { get; set; } = TimeSpan.FromMinutes(1);
 
     /// <summary>
-    /// The Base URL of the site the driver will be working with
+    ///   The Base URL of the site the driver will be working with
     /// </summary>
-    private string BaseUrl { get; set; }
+    public string BaseUrl { get; set; }
 
     /// <summary>
-    /// 
+    ///   If authentication is required, the username
+    /// </summary>
+    public string Username { get; set; }
+
+    /// <summary>
+    ///   If authentication is required, the password
+    /// </summary>
+    public string Password { get; set; }
+
+    /// <summary>
+    ///   Relative Redirect URL after logging in
+    /// </summary>
+    public string RelativeLoginUrl { get; set; } = "/";
+
+    /// <summary>
+    ///   Relative path to an inteligenz logo, should be a path
+    ///   that requires no authentication
+    /// </summary>
+    public string RelativeLogoPath { get; set; } = "/favicon.ico";
+
+    /// <summary>
+    /// </summary>
+    public string AzureClientId { get; set; }
+
+    /// <summary>
+    /// </summary>
+    public string AzureClientSecret { get; set; }
+
+    /// <summary>
+    /// </summary>
+    public string AzureTenantId { get; set; } = "ccb9ffa9-f1ed-4f51-9b6a-e5cf6d8275c7";
+
+    /// <summary>
+    /// </summary>
+    private string AzureClientAuthority { get; } = "https://login.microsoftonline.com/<TenantId>/";
+
+    /// <summary>
+    ///   CSS Selector used to validate login was successful
+    /// </summary>
+    public string LoggedInValidationSelector { get; set; } = "button.user-name";
+
+    /// <summary>
+    ///   Configuration parameter: <c>webdriver.browser.type</c>
+    /// </summary>
+    public (int Width, int Height) GetBrowserSize()
+    {
+      if (string.IsNullOrEmpty(BrowserSize))
+        return (1600, 1200);
+
+      var parts = BrowserSize.Split(',').Select(x => int.Parse(x.Trim())).ToArray();
+      if (parts.Length != 2)
+        throw new InvalidOperationException("browserSize does not appear to be valid. Should be 'width,height'");
+
+      return (parts[0], parts[1]);
+    }
+
+    /// <summary>
     /// </summary>
     /// <returns></returns>
     public Uri GetBaseUrl() => new Uri(BaseUrl);
 
     /// <summary>
-    /// If authentication is required, the username
-    /// </summary>
-    public string Username { get; set; }
-
-    /// <summary>
-    /// If authentication is required, the password
-    /// </summary>
-    public string Password { get; set; }
-
-    /// <summary>
-    /// The secure password
+    ///   The secure password
     /// </summary>
     /// <returns></returns>
     public SecureString GetPassword()
     {
       var pw = new SecureString();
-      foreach(var c in Password)
+      foreach (var c in Password)
         pw.AppendChar(c);
 
       return pw;
     }
 
     /// <summary>
-    /// Relative Redirect URL after logging in
-    /// </summary>
-    public string RelativeLoginUrl { get; set; } = "/";
-
-    /// <summary>
-    /// Relative path to an inteligenz logo, should be a path
-    /// that requires no authentication
-    /// </summary>
-    public string RelativeLogoPath { get; set; } = "/favicon.ico";
-
-    /// <summary>
-    /// 
-    /// </summary>
-    public string AzureClientId { get; set; }
-
-    /// <summary>
-    /// 
-    /// </summary>
-    public string AzureClientSecret { get; set; }
-
-    /// <summary>
-    /// 
-    /// </summary>
-    public string AzureTenantId { get; set; } = "ccb9ffa9-f1ed-4f51-9b6a-e5cf6d8275c7";
-
-    /// <summary>
-    /// 
-    /// </summary>
-    private string AzureClientAuthority { get; set; } = "https://login.microsoftonline.com/<TenantId>/";
-
-    /// <summary>
-    /// CSS Selector used to validate login was successful
-    /// </summary>
-    public string LoggedInValidationSelector { get; set; } = "button.user-name";
-
-    /// <summary>
-    /// 
     /// </summary>
     /// <returns></returns>
     public Uri GetAzureClientAuthority() => new Uri(AzureClientAuthority.Replace("<TenantId>", AzureTenantId));
@@ -155,42 +154,71 @@ namespace Microcelium.Testing.Selenium
         opts.AddArguments("--hide-scrollbars");
       }
 
+      /* caution, some things need to be AddLocalStatePreference,
+        e.g: browser.enable_labs_experimentsw, others need to be
+        AddUserProfilePreference, e.g. download.default_directory*/
+
       opts.AddLocalStatePreference("download.prompt_for_download", false);
       opts.AddLocalStatePreference("plugins.always_open_pdf_externally", true);
-      opts.AddLocalStatePreference("browser.enabled_labs_experiments", new[]
-        { "same-site-by-default-cookies@2", "cookies-without-same-site-must-be-secure@2" });
+      opts.AddLocalStatePreference("browser.enabled_labs_experiments",
+        new[] { "same-site-by-default-cookies@2", "cookies-without-same-site-must-be-secure@2" });
 
       if (downloadDirectory != null)
-        opts.AddLocalStatePreference("download.default_directory", downloadDirectory);
+        opts.AddUserProfilePreference("download.default_directory", downloadDirectory);
 
       config?.Invoke(opts);
       return opts;
     }
   }
 
+  /// <summary>
+  /// Extensions methods to facilitate the configuration of some tests, particularly
+  /// those that expose an <see cref="IServiceCollection"/>
+  /// </summary>
   public static class WebDriverConfigExtensions
   {
-    public static IServiceCollection AddWebDriverConfig(this IServiceCollection services, Action<WebDriverConfig> config = null)
+    /// <summary>
+    /// Adds the "default" configuration scheme consisting of a local json file
+    /// name "appsettings.json" and any environment variables prefixed with "selenium_"
+    /// </summary>
+    /// <param name="services">the <see cref="IServiceCollection"/></param>
+    /// <param name="config">addition configuration of the <see cref="WebDriverConfig"/></param>
+    /// <returns></returns>
+    public static IServiceCollection AddWebDriverConfig(
+      this IServiceCollection services,
+      Action<WebDriverConfig> config = null)
     {
       var configuration = new ConfigurationBuilder()
         .AddJsonFile("appsettings.json", true, false)
         .AddEnvironmentVariables("selenium_")
         .Build();
 
-      WebDriverConfig wdc = new WebDriverConfig();
+      var wdc = new WebDriverConfig();
       configuration.Bind(wdc, opt => { opt.BindNonPublicProperties = true; });
       config?.Invoke(wdc);
       services.TryAddSingleton(Options.Create(wdc));
       return services;
     }
 
-    public static IServiceCollection AddInMemoryWebDriverConfig(this IServiceCollection services, IEnumerable<KeyValuePair<string, string>> args)
+    /// <summary>
+    /// A version of configuration that omits the json file and includes only
+    /// environment variables prefixed with "selenium_" and additional takes
+    /// a dictionary that will overwrite any potential environment variables.
+    /// The passed in dictionary DOES NOT need to be prefixed.
+    /// </summary>
+    /// <param name="services">the <see cref="IServiceCollection"/></param>
+    /// <param name="args">the passed in parameters</param>
+    /// <returns></returns>
+    public static IServiceCollection AddInMemoryWebDriverConfig(
+      this IServiceCollection services,
+      IEnumerable<KeyValuePair<string, string>> args)
     {
       var configuration = new ConfigurationBuilder()
+        .AddEnvironmentVariables("selenium_")
         .AddInMemoryCollection(args)
         .Build();
 
-      WebDriverConfig wdc = new WebDriverConfig();
+      var wdc = new WebDriverConfig();
       configuration.Bind(wdc, opt => { opt.BindNonPublicProperties = true; });
       services.TryAddSingleton(Options.Create(wdc));
       return services;

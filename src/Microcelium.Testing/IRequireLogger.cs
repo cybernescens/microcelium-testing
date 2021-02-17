@@ -8,6 +8,4 @@ namespace Microcelium.Testing
   /// Access is made available via an extension method in <see cref="RequireLoggerExtensions"/>
   /// </summary>
   public interface IRequireLogger { }
-
-  
 }

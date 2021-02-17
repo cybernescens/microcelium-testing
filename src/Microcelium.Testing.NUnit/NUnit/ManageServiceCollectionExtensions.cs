@@ -29,7 +29,7 @@ namespace Microcelium.Testing.NUnit
     {
       var services = new ServiceCollection();
       config?.Invoke(services);
-      TestExecutionContext.CurrentContext.CurrentTest.Properties.Set(ServiceCollectionPropertyKey, services);
+      TestExecutionContext.CurrentContext.SetSuiteProperty(ServiceCollectionPropertyKey, services);
       return services;
     }
 
@@ -57,7 +57,7 @@ namespace Microcelium.Testing.NUnit
     {
       var services = GetServiceCollection(icsc);
       var sp = services.BuildServiceProvider();
-      TestExecutionContext.CurrentContext.CurrentTest.Properties.Set(ServiceProviderPropertyKey, services);
+      TestExecutionContext.CurrentContext.SetSuiteProperty(ServiceProviderPropertyKey, sp);
       return sp;
     }
 

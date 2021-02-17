@@ -5,7 +5,7 @@ namespace Microcelium.Testing.NUnit
   /// <summary>
   /// Enableds configuration of the test specific container instance
   /// </summary>
-  public interface IProvideServiceCollectionConfiguration
+  public interface IProvideServiceCollectionConfiguration : IRequireServicesCollection
   {
     /// <summary>
     /// Configures the test specific container instance

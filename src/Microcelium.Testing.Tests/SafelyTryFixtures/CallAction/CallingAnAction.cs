@@ -7,7 +7,7 @@ using NUnit.Framework;
 namespace Microcelium.Testing.SafelyTryFixtures.CallAction
 {
   [Parallelizable(ParallelScope.None)]
-  internal class CallingAnAction : IRequireLogValidation, IRequireLogger
+  internal class CallingAnAction : IRequireLogValidation, IRequireLogger, IManageLogging
   {
     private bool wasCalled;
 
@@ -16,6 +16,7 @@ namespace Microcelium.Testing.SafelyTryFixtures.CallAction
     [SetUp]
     public void SetUp()
     {
+      this.AddLogging();
       var log = this.CreateLogger();
       wasCalled = false;
       SafelyTry.Action(() => WasCalled(), log);

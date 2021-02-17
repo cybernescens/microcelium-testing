@@ -6,8 +6,9 @@ using System.Threading.Tasks;
 using FluentAssertions;
 using Microcelium.Testing.Net;
 using Microcelium.Testing.NUnit;
+using Microcelium.Testing.NUnit.Selenium;
+using Microcelium.Testing.Selenium.Pages;
 using Microsoft.AspNetCore;
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
@@ -18,65 +19,102 @@ using OpenQA.Selenium;
 
 namespace Microcelium.Testing.Selenium.WebDriverExtensionsFixtures
 {
-  [Parallelizable(ParallelScope.Fixtures)]
-  internal class GettingBrowserAlertDialog : IRequireLogger
+  [Parallelizable(ParallelScope.None)]
+  internal class GettingBrowserAlertDialog :
+    IRequireLogger,
+    IProvideServiceCollectionConfiguration,
+    IRequireWebPage<AlertSite, AlertPage>
   {
-    private ILogger log;
     private string url;
-    private IWebDriver webDriver;
-    private IWebHost webHost;
 
-    [OneTimeSetUp]
-    public void SetUp()
+    public void Configure(IServiceCollection services)
     {
-      log = this.CreateLogger();
-      var services = new ServiceCollection();
       var args = new NameValueCollection();
       url = $"http://localhost:{TcpPort.NextFreePort()}";
       args.Add("BaseUrl", url);
-
       services.AddInMemoryWebDriverConfig(args.Keys.Cast<string>().Select(x => KeyValuePair.Create(x, args[x])));
-      var sp = services.BuildServiceProvider();
-      var browserConfig = sp.GetRequiredService<IOptions<WebDriverConfig>>().Value;
+      services.AddWebComponents(typeof(AlertSite), typeof(AlertPage));
+    }
 
-      webHost = WebHost.Start(
+    public AlertSite Site { get; set; }
+    public AlertPage Page { get; set; }
+
+    [Test]
+    public async Task GetsAlertDialog()
+    {
+      using var webHost = WebHost.Start(
         url,
         router => router
           .MapGet(
-            "",
+            "/",
             (req, res, data) => {
               res.ContentType = "text/html; charset=utf-8";
               return res.WriteAsync(
-                "<html><body><script type=\"text/javascript\">alert('Hello! I am an alert box!');</script></body></html>");
+                @"<html>
+                  <body>
+                  <div class='container'></div>
+                  <script type='text/javascript'>
+                    (function() {
+                      setTimeout(function() {alert('Hello! I am an alert box!');}, 1000);                  
+                    })();
+                  </script>
+                  </body>
+                  </html>");
             }));
 
-      webDriver = WebDriverFactory.Create(browserConfig);
+      Page.Navigate();
+      await Page.Wait();
+      Page.DismissAlert(true);
     }
 
     [Test]
-    public void GetsAlertDialog()
+    public async Task TimeoutIfDialogIsNotPresent()
     {
-      webDriver.Navigate().GoToUrl(url);
-      webDriver.GetAlert(log).Should().NotBeNull();
-      webDriver.GetAlert(log).Dismiss();
-    }
+      using var webHost = WebHost.Start(
+        url,
+        router => router
+          .MapGet(
+            "/",
+            (req, res, data) => {
+              res.ContentType = "text/html; charset=utf-8";
+              return res.WriteAsync(
+                "<html><body><div class='container'></div><script type=\"text/javascript\"></script></body></html>");
+            }));
 
-    [Test]
-    public void TimesoutIfDialogIsNotPresent()
-    {
-      webDriver.Navigate().GoToUrl(url);
-      webDriver.GetAlert(log).Dismiss();
-
-      Action act = () => webDriver.GetAlert(log, TimeSpan.FromMilliseconds(100));
+      Action act = () => {
+        Page.Navigate();
+        Page.Wait().GetAwaiter().GetResult();
+        Page.DismissAlert(false);
+      };
 
       act.Should().Throw<WebDriverTimeoutException>();
     }
+  }
 
-    [OneTimeTearDown]
-    public void TearDown()
+  internal class AlertSite : WebSite
+  {
+    public AlertSite(IWebDriver driver, IOptions<WebDriverConfig> config) : base(driver, config) { }
+  }
+
+  internal class AlertPage : WebPage<AlertPage>
+  {
+    private readonly ILogger<AlertPage> log;
+
+    public AlertPage(IWebSite site, ILoggerFactory lf, TimeSpan? timeout = null) : base(site, lf, timeout)
     {
-      SafelyTry.Dispose(webDriver);
-      SafelyTry.Dispose(webHost);
+      log = lf.CreateLogger<AlertPage>();
+    }
+
+    public override By LoadedIdentifier => By.CssSelector("div.container");
+    public override string RelativePath => "/";
+
+    public void DismissAlert(bool ensure)
+    {
+      var alert = Parent.Driver.GetAlert(log);
+      if (ensure)
+        alert.Should().NotBeNull();
+
+      alert.Dismiss();
     }
   }
 }

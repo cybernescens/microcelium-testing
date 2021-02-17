@@ -1,12 +1,9 @@
-﻿using System.Diagnostics.CodeAnalysis;
-using Microcelium.Testing;
-using Microcelium.Testing.NUnit;
+﻿using Microcelium.Testing;
 using NUnit.Framework;
 using Serilog;
 
 [SetUpFixture]
-[SuppressMessage("ReSharper", "CheckNamespace")]
-public class LoggingSetup : IManageLogging
+public class LoggingSetup
 {
   [OneTimeSetUp]
   public void Initialize()
@@ -14,7 +11,5 @@ public class LoggingSetup : IManageLogging
     Log.Logger = new LoggerConfiguration()
       .InitializeForMicroceliumTesting()
       .CreateLogger();
-
-    this.AddLogging();
   }
 }

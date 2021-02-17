@@ -24,7 +24,7 @@ namespace Microcelium.Testing.Selenium
 
     public string SaveScreenshotForEachTab(string filePath)
     {
-      log.LogInformation("Saving screen shot to path:\n{0}", filePath);
+      log.LogDebug("Saving screen shot...");
 
       try
       {
@@ -44,7 +44,7 @@ namespace Microcelium.Testing.Selenium
       }
       catch (Exception e)
       {
-        log.LogError("Failed to capture screenshot:\n{0}", e);
+        log.LogWarning(e.InnerException, "Failed to capture screenshot");
       }
 
       return null;

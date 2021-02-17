@@ -1,6 +1,4 @@
-﻿using Microcelium.Testing.Selenium;
-
-namespace Microcelium.Testing.NUnit.Selenium
+﻿namespace Microcelium.Testing.Selenium
 {
   /// <summary>
   /// Test decorator for when access to the <see cref="WebDriverConfig"/> is necessary

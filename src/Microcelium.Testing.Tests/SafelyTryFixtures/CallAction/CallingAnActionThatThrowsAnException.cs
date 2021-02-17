@@ -7,13 +7,14 @@ using NUnit.Framework;
 namespace Microcelium.Testing.SafelyTryFixtures.CallAction
 {
   [Parallelizable(ParallelScope.None)]
-  internal class CallingAnActionThatThrowsAnException : IRequireLogValidation, IRequireLogger
+  internal class CallingAnActionThatThrowsAnException : IRequireLogValidation, IManageLogging, IRequireLogger
   {
     public LogTestContext LogContext { get; set; }
 
     [SetUp]
     public void SetUp()
     {
+      this.AddLogging();
       var log = this.CreateLogger();
       SafelyTry.Action(() => ThrowsException(), log);
     }

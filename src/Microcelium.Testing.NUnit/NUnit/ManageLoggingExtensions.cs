@@ -30,7 +30,7 @@ namespace Microcelium.Testing.NUnit
       var sp = icl.GetServiceProvider();
       var factory = sp.GetService<ILoggerFactory>();
 
-      TestExecutionContext.CurrentContext.CurrentTest.Properties.Set(LoggerFactoryPropertyKey, factory);
+      TestExecutionContext.CurrentContext.SetSuiteProperty(LoggerFactoryPropertyKey, factory);
       return services;
     }
   }

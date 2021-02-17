@@ -6,16 +6,17 @@ using NUnit.Framework.Interfaces;
 namespace Microcelium.Testing.NUnit
 {
   [Parallelizable(ParallelScope.None)]
-  internal class LogTestNameAttributeFixtures : IRequireLogValidation
+  internal class LogTestNameAttributeFixtures : IRequireLogValidation, IManageLogging
   {
     private ITest fakeTest;
     private TraceTestNameAttribute traceTestNameAttribute;
 
     public LogTestContext LogContext { get; set; }
 
-    [OneTimeSetUp]
+    [SetUp]
     public void SetUp()
     {
+      this.AddLogging();
       traceTestNameAttribute = new TraceTestNameAttribute();
       fakeTest = Substitute.For<ITest>();
       fakeTest.FullName.Returns("Foo");
