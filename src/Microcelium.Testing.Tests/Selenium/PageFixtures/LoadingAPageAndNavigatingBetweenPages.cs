@@ -59,7 +59,7 @@ namespace Microcelium.Testing.Selenium.PageFixtures
               return res.WriteAsync(
                 @"<body>
                     <input type='radio' name='test' id='foo' value='foo' checked /><label for='foo'>Foo</label>
-                    <input type='radio' name='test' id='bar' value='bar' /><label for='bar'>Bar</label>
+                    <input type='radio' name='test' id='bar' value='bar' /><label for='bar' class='bar'>Bar</label>
                   </body>");
             }));
 
@@ -100,7 +100,7 @@ namespace Microcelium.Testing.Selenium.PageFixtures
       );
     }
 
-    public IWebElement BarLabel => ElementByCss("label[for='bar']");
+    public IWebElement BarLabel => ElementByCss("label.bar");
     public IWebElement RadioButton => lazyRadio.Value;
     public override By LoadedIdentifier => By.CssSelector("input");
     public override string RelativePath => "page2";
