@@ -76,7 +76,7 @@ namespace Microcelium.Testing.Selenium
 
       var sp = services.BuildServiceProvider();
       using var driver = sp.GetRequiredService<IWebDriver>();
-      driver.Manage().Window.Size.Should().Be(new Size(1280, 1024));
+      driver.Manage().Window.Size.Should().Be(new Size(1024, 768));
       driver?.Dispose();
     }
 
