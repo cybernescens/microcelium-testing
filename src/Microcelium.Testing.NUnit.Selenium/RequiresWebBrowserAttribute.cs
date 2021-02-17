@@ -101,7 +101,7 @@ namespace Microcelium.Testing.NUnit.Selenium
       site.PageFactory = t => (IWebPage) scope.ServiceProvider.GetRequiredService(t);
 
       if (screenshots != null)
-        page.OnPageLoaded += (_, __) => { SaveScreenshotForEachTab(test, "_pre"); };
+        page.OnComponentLoaded += (_, __) => { SaveScreenshotForEachTab(test, "_pre"); };
     }
 
     /// <inheritdoc />

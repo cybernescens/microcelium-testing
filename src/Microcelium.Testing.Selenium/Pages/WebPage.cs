@@ -30,6 +30,11 @@ namespace Microcelium.Testing.Selenium.Pages
     }
 
     /// <summary>
+    /// Shortcut to the <see cref="IWebDriver"/>
+    /// </summary>
+    protected IWebDriver Driver => Parent.Driver;
+
+    /// <summary>
     /// Navigates to this page
     /// </summary>
     /// <param name="query">optional query parameters</param>
@@ -55,12 +60,12 @@ namespace Microcelium.Testing.Selenium.Pages
       pageLoadTask = Task
         .Run(
           () => {
-            OnPageLoading?.Invoke(this, new PageLoadEvent { Page = this, Path = path });
+            OnComponentLoading?.Invoke(this, new ComponentLoadEvent { Page = this, Path = path });
             Parent.Driver.Navigate().GoToUrl(path);
             Parent.Driver.FindElement(LoadedIdentifier);
             Parent.Driver.DefinitivelyWaitForAnyAjax(log, Timeout);
             pageLoaded = true;
-            OnPageLoaded?.Invoke(this, new PageLoadEvent { Page = this, Path = path });
+            OnComponentLoaded?.Invoke(this, new ComponentLoadEvent { Page = this, Path = path });
           },
           CancellationToken.None);
 
@@ -81,10 +86,10 @@ namespace Microcelium.Testing.Selenium.Pages
     }
 
     /// <inheritdoc />
-    public event EventHandler<PageLoadEvent> OnPageLoading;
+    public event EventHandler<ComponentLoadEvent> OnComponentLoading;
 
     /// <inheritdoc />
-    public event EventHandler<PageLoadEvent> OnPageLoaded;
+    public event EventHandler<ComponentLoadEvent> OnComponentLoaded;
 
     /// <inheritdoc />
     public abstract By LoadedIdentifier { get; }
@@ -103,7 +108,7 @@ namespace Microcelium.Testing.Selenium.Pages
     /// </summary>
     /// <param name="css">the CSS Selector</param>
     /// <returns></returns>
-    protected IWebElement ElementByCss(string css)
+    public IWebElement ElementByCss(string css)
     {
       log.LogWarning($"PageLoaded: {pageLoaded}; Finding by: {css}");
       return Parent.Driver.FindElement(By.CssSelector(css));
@@ -114,7 +119,7 @@ namespace Microcelium.Testing.Selenium.Pages
     /// </summary>
     /// <param name="css">the CSS Selector</param>
     /// <returns></returns>
-    protected ReadOnlyCollection<IWebElement> ElementsByCss(string css)
+    public ReadOnlyCollection<IWebElement> ElementsByCss(string css)
     {
       log.LogWarning($"PageLoaded: {pageLoaded}; Finding by: {css}");
       return Parent.Driver.FindElements(By.CssSelector(css));

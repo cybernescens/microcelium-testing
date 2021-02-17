@@ -70,7 +70,7 @@ namespace Microcelium.Testing.Selenium.Pages
   /// <summary>
   /// Fired when a Page is Loading and Loaded
   /// </summary>
-  public record PageLoadEvent
+  public record ComponentLoadEvent
   {
     /// <summary>
     /// The entire <see cref="Uri"/> the Page represents

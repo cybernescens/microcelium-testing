@@ -31,12 +31,12 @@ namespace Microcelium.Testing.Selenium.Pages
     /// <summary>
     /// Event fired just prior to the <see cref="IWebDriver"/> navigating to the page
     /// </summary>
-    public event EventHandler<PageLoadEvent> OnPageLoading;
+    public event EventHandler<ComponentLoadEvent> OnComponentLoading;
 
     /// <summary>
     /// Event fired when the page is completely loaded and no pending ajax can be found.
     /// </summary>
-    public event EventHandler<PageLoadEvent> OnPageLoaded;
+    public event EventHandler<ComponentLoadEvent> OnComponentLoaded;
   }
 
   /// <summary>
