@@ -79,9 +79,11 @@ namespace Microcelium
     ///   This does everything I could possibly think of to ensure we wait for all AJAX
     /// </summary>
     /// <param name="driver">the <see cref="IWebDriver" /></param>
+    /// <param name="log"></param>
     /// <param name="seconds">the maximum amount of time to wait until an exception is thrown</param>
     /// <returns></returns>
     public static bool DefinitivelyWaitForAnyAjax(this IWebDriver driver, ILogger log, TimeSpan? seconds = null) =>
+      driver.WaitForJavascriptResult("typeof $ !== 'undefined' ? $.active : 0", "0", log, seconds ?? DefaultTimeout) &&
       driver.WaitForJavascriptResult("document.readyState", "complete", log, seconds ?? DefaultTimeout);
 
     /// <summary>

@@ -61,15 +61,36 @@ namespace Microcelium.Testing.Selenium.Pages
         .Run(
           () => {
             OnComponentLoading?.Invoke(this, new ComponentLoadEvent { Page = this, Path = path });
+            var unloadElement = LoadedIdentifierElement;
             Parent.Driver.Navigate().GoToUrl(path);
+            while (!IsStale(unloadElement))
+              Task.Delay(TimeSpan.FromMilliseconds(250))
+                .GetAwaiter()
+                .GetResult();
+          })
+        .ContinueWith(
+          t => {
             Parent.Driver.FindElement(LoadedIdentifier);
             Parent.Driver.DefinitivelyWaitForAnyAjax(log, Timeout);
             pageLoaded = true;
             OnComponentLoaded?.Invoke(this, new ComponentLoadEvent { Page = this, Path = path });
           },
-          CancellationToken.None);
+          TaskContinuationOptions.OnlyOnRanToCompletion);
 
       return this;
+    }
+
+    private bool IsStale(IWebElement element)
+    {
+      try
+      {
+        element.Click();
+        return false;
+      }
+      catch (StaleElementReferenceException)
+      {
+        return true;
+      }
     }
 
     /// <inheritdoc />
@@ -93,6 +114,11 @@ namespace Microcelium.Testing.Selenium.Pages
 
     /// <inheritdoc />
     public abstract By LoadedIdentifier { get; }
+
+    /// <summary>
+    /// Returns the <see cref="IWebElement"/> for the <see cref="LoadedIdentifier"/>
+    /// </summary>
+    protected virtual IWebElement LoadedIdentifierElement => Driver.FindElement(LoadedIdentifier);
 
     /// <inheritdoc />
     public TimeSpan Timeout { get; }
