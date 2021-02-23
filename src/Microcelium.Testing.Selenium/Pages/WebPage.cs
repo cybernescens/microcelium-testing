@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
@@ -14,6 +15,7 @@ namespace Microcelium.Testing.Selenium.Pages
   {
     private bool pageLoaded;
     private Task pageLoadTask;
+    private Task pageUnloadTask;
     private readonly ILogger<WebPage<TWebPage>> log;
 
     /// <summary>
@@ -57,29 +59,51 @@ namespace Microcelium.Testing.Selenium.Pages
       builder.Query = query;
       var path = builder.Uri;
 
-      pageLoadTask = Task
-        .Run(
-          () => {
-            OnComponentLoading?.Invoke(this, new ComponentLoadEvent { Page = this, Path = path });
-            var unloadElement = LoadedIdentifierElement;
-            Parent.Driver.Navigate().GoToUrl(path);
-            while (!IsStale(unloadElement))
-              Task.Delay(TimeSpan.FromMilliseconds(250))
-                .GetAwaiter()
-                .GetResult();
-          })
-        .ContinueWith(
-          t => {
-            Parent.Driver.FindElement(LoadedIdentifier);
-            Parent.Driver.DefinitivelyWaitForAnyAjax(log, Timeout);
-            pageLoaded = true;
-            OnComponentLoaded?.Invoke(this, new ComponentLoadEvent { Page = this, Path = path });
-          },
-          TaskContinuationOptions.OnlyOnRanToCompletion);
+      // multiple sequential steps here:
+      // 1) fire loading event
+      // 2) prepare unload
+      // 3) fire navigate
+      // 4) fire wait unload and forget (async)
+      // 5) fire wait load and forget (async)
+      //    5a) no js running, no pending ajax
+      //    5b) fire loaded event
+
+      Task Unload(IWebElement e) =>
+        !IsStale(e)
+          ? Task.Delay(TimeSpan.FromMilliseconds(250))
+            .ContinueWith((_, o) => Unload((IWebElement) o), e)
+          : Task.CompletedTask;
+
+      Task Load() =>
+        Task
+          .Run(
+            () => {
+              /* (5a) */
+              Parent.Driver.FindElement(LoadedIdentifier);
+              Parent.Driver.DefinitivelyWaitForAnyAjax(log, Timeout);
+            })
+          .ContinueWith(
+            _ => {
+              /* (5b) */
+              pageLoaded = true;
+              OnComponentLoaded?.Invoke(this, new ComponentLoadEvent { Page = this, Path = path });
+            });
+
+      /* (1) */
+      OnComponentLoading?.Invoke(this, new ComponentLoadEvent { Page = this, Path = path });
+      /* (2) */
+      var unloadElement = Parent.Driver.FindElement(By.CssSelector("body"));
+      /* (3) */
+      Parent.Driver.Navigate().GoToUrl(path);
+      /* (4) */
+      pageUnloadTask = Unload(unloadElement);
+      /* (5) */
+      pageLoadTask = Load();
 
       return this;
     }
 
+    [DebuggerNonUserCode]
     private bool IsStale(IWebElement element)
     {
       try
@@ -99,11 +123,15 @@ namespace Microcelium.Testing.Selenium.Pages
     /// <inheritdoc />
     public Task Wait()
     {
+      if (pageUnloadTask == null)
+        throw new InvalidOperationException(
+          "The page must be navigated away from at least once in its lifecycle for unload to be Waited on.");
+
       if (pageLoadTask == null)
         throw new InvalidOperationException(
           "The page must be navigated to at least once in its lifecycle to be Waited on."); 
 
-      return pageLoadTask;
+      return Task.WhenAll(pageUnloadTask, pageLoadTask);
     }
 
     /// <inheritdoc />
@@ -114,11 +142,6 @@ namespace Microcelium.Testing.Selenium.Pages
 
     /// <inheritdoc />
     public abstract By LoadedIdentifier { get; }
-
-    /// <summary>
-    /// Returns the <see cref="IWebElement"/> for the <see cref="LoadedIdentifier"/>
-    /// </summary>
-    protected virtual IWebElement LoadedIdentifierElement => Driver.FindElement(LoadedIdentifier);
 
     /// <inheritdoc />
     public TimeSpan Timeout { get; }
