@@ -1,7 +1,7 @@
 ﻿using System;
-using System.Collections.ObjectModel;
 using System.Diagnostics;
-using System.Threading;
+using System.Runtime.CompilerServices;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using OpenQA.Selenium;
@@ -11,37 +11,34 @@ namespace Microcelium.Testing.Selenium.Pages
   /// <summary>
   ///   A Conceptual "Web Page" hosted by a "Web Site"
   /// </summary>
-  public abstract class WebPage<TWebPage> : IWebPage where TWebPage : IWebPage
+  public abstract class WebPage<TWebPage> : WebComponent<IWebSite>, IWebPage where TWebPage : IWebPage
   {
-    private bool pageLoaded;
+    private static readonly Regex LeadSlash = new Regex("^/", RegexOptions.Compiled);
+    private readonly ILogger<WebPage<TWebPage>> log;
     private Task pageLoadTask;
     private Task pageUnloadTask;
-    private readonly ILogger<WebPage<TWebPage>> log;
 
     /// <summary>
     /// Instantiates a <see cref="WebPage{TWebPage}"/>
     /// </summary>
-    /// <param name="site">the host <see cref="IWebSite"/></param>
-    /// <param name="lf">the <see cref="ILoggerFactory"/></param>
-    /// <param name="timeout">the page's implicit wait timeout</param>
-    protected WebPage(IWebSite site, ILoggerFactory lf, TimeSpan? timeout = null)
+    /// <param name="site">the parent <see cref="IWebSite"/></param>
+    /// <param name="lf">a <see cref="ILoggerFactory"/></param>
+    /// <param name="timeout">the page load timeout, or the configured default when not provided</param>
+    protected WebPage(IWebSite site, ILoggerFactory lf, TimeSpan? timeout = null) : base(site, lf)
     {
-      Parent = site;
-      Timeout = timeout ?? site.Config.PageLoadTimeout;
       log = lf.CreateLogger<WebPage<TWebPage>>();
+      Timeout = timeout ?? site.Config.PageLoadTimeout;
     }
 
-    /// <summary>
-    /// Shortcut to the <see cref="IWebDriver"/>
-    /// </summary>
-    protected IWebDriver Driver => Parent.Driver;
+    /// <inheritdoc />
+    protected override IWebDriver Driver => Parent.Driver;
 
     /// <summary>
     /// Navigates to this page
     /// </summary>
     /// <param name="query">optional query parameters</param>
     /// <returns>a reference to itself</returns>
-    public TWebPage Navigate(string query = null) => (TWebPage) HandleNavigate(query);
+    public TWebPage Navigate(string query = null) => (TWebPage)HandleNavigate(query);
 
     /// <summary>
     /// Navigates to this page
@@ -51,12 +48,10 @@ namespace Microcelium.Testing.Selenium.Pages
     protected IWebPage HandleNavigate(string query = null)
     {
       var builder = new UriBuilder(Parent.Config.GetBaseUrl());
-      builder.Path = 
-        (RelativePath ?? string.Empty).StartsWith("/", StringComparison.InvariantCulture)
-          ? RelativePath
-          : "/" + RelativePath;
-
-      builder.Query = query;
+      builder.Query = query ?? string.Empty;
+      builder.Path =
+        $"/{LeadSlash.Replace(RelativePath ?? string.Empty, string.Empty)}";
+     
       var path = builder.Uri;
 
       // multiple sequential steps here:
@@ -71,7 +66,7 @@ namespace Microcelium.Testing.Selenium.Pages
       Task Unload(IWebElement e) =>
         !IsStale(e)
           ? Task.Delay(TimeSpan.FromMilliseconds(250))
-            .ContinueWith((_, o) => Unload((IWebElement) o), e)
+            .ContinueWith((_, o) => Unload((IWebElement)o), e)
           : Task.CompletedTask;
 
       Task Load() =>
@@ -85,7 +80,6 @@ namespace Microcelium.Testing.Selenium.Pages
           .ContinueWith(
             _ => {
               /* (5b) */
-              pageLoaded = true;
               OnComponentLoaded?.Invoke(this, new ComponentLoadEvent { Page = this, Path = path });
             });
 
@@ -104,7 +98,8 @@ namespace Microcelium.Testing.Selenium.Pages
     }
 
     [DebuggerNonUserCode]
-    private bool IsStale(IWebElement element)
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static bool IsStale(IWebElement element)
     {
       try
       {
@@ -118,10 +113,13 @@ namespace Microcelium.Testing.Selenium.Pages
     }
 
     /// <inheritdoc />
-    public IWebSite Parent { get; internal set; }
+    public override event EventHandler<ComponentLoadEvent> OnComponentLoading;
 
     /// <inheritdoc />
-    public Task Wait()
+    public override event EventHandler<ComponentLoadEvent> OnComponentLoaded;
+
+    /// <inheritdoc />
+    public override Task Wait()
     {
       if (pageUnloadTask == null)
         throw new InvalidOperationException(
@@ -129,49 +127,19 @@ namespace Microcelium.Testing.Selenium.Pages
 
       if (pageLoadTask == null)
         throw new InvalidOperationException(
-          "The page must be navigated to at least once in its lifecycle to be Waited on."); 
+          "The page must be navigated to at least once in its lifecycle to be Waited on.");
 
       return Task.WhenAll(pageUnloadTask, pageLoadTask);
     }
 
     /// <inheritdoc />
-    public event EventHandler<ComponentLoadEvent> OnComponentLoading;
-
-    /// <inheritdoc />
-    public event EventHandler<ComponentLoadEvent> OnComponentLoaded;
-
-    /// <inheritdoc />
-    public abstract By LoadedIdentifier { get; }
-
-    /// <inheritdoc />
     public TimeSpan Timeout { get; }
-
-    /// <inheritdoc />
-    public abstract string RelativePath { get; }
 
     /// <inheritdoc />
     public virtual IPageComponent[] Components { get; } = new IPageComponent[0];
 
-    /// <summary>
-    /// Attempts to find a Single <see cref="IWebElement"/> by a CSS Selector
-    /// </summary>
-    /// <param name="css">the CSS Selector</param>
-    /// <returns></returns>
-    public IWebElement ElementByCss(string css)
-    {
-      log.LogWarning($"PageLoaded: {pageLoaded}; Finding by: {css}");
-      return Parent.Driver.FindElement(By.CssSelector(css));
-    }
+    /// <inheritdoc />
+    public abstract string RelativePath { get; }
 
-    /// <summary>
-    /// Attempts to find Many <see cref="IWebElement"/>s by a CSS Selector
-    /// </summary>
-    /// <param name="css">the CSS Selector</param>
-    /// <returns></returns>
-    public ReadOnlyCollection<IWebElement> ElementsByCss(string css)
-    {
-      log.LogWarning($"PageLoaded: {pageLoaded}; Finding by: {css}");
-      return Parent.Driver.FindElements(By.CssSelector(css));
-    }
   }
 }

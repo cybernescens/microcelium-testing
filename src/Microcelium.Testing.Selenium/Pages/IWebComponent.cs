@@ -16,7 +16,7 @@ namespace Microcelium.Testing.Selenium.Pages
     TParent Parent { get; }
 
     /// <summary>
-    /// The <see cref="By"/> crLiteria executed by the <see cref="IWebDriver"/> to
+    /// The <see cref="By"/> criteria executed by the <see cref="IWebDriver"/> to
     /// determine the page has completely loaded
     /// </summary>
     By LoadedIdentifier { get; }
