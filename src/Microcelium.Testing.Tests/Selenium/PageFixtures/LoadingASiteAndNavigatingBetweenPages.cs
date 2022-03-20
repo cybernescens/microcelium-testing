@@ -11,7 +11,7 @@ using OpenQA.Selenium;
 namespace Microcelium.Testing.Selenium.PageFixtures;
 
 [Parallelizable(ParallelScope.Fixtures)]
-[RequiresScreenshotsDirectory]
+[RequireScreenshotsDirectory]
 [RequireWebEndpoint]
 [RequireSelenium]
 internal class LoadingASiteAndNavigatingBetweenPages :

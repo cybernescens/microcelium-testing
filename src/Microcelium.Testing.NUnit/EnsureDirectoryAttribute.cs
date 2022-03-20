@@ -96,13 +96,3 @@ public class EnsureDirectoryAttribute : RequireHostAttribute
 
   protected override void ApplyToContext() { }
 }
-
-public class RequireDownloadDirectoryAttribute : EnsureDirectoryAttribute
-{
-  public RequireDownloadDirectoryAttribute() : base(typeof(IRequireDownloadDirectory), true, "Download") { }
-}
-
-public class RequiresScreenshotsDirectory : EnsureDirectoryAttribute
-{
-  public RequiresScreenshotsDirectory() : base(typeof(IRequireScreenshots), false, "Screenshots") { }
-}

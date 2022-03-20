@@ -9,7 +9,7 @@ using NUnit.Framework;
 namespace Microcelium.Testing.Selenium;
 
 [Parallelizable(ParallelScope.Fixtures)]
-[RequiresScreenshotsDirectory]
+[RequireScreenshotsDirectory]
 [RequireGenericHost]
 internal class TakingScreenShots : IRequireLogging, IRequireScreenshots
 {

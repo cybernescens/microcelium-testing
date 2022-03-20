@@ -9,7 +9,7 @@ using NUnit.Framework;
 namespace Microcelium.Testing.Selenium.WebDriverExtensionsFixtures;
 
 [Parallelizable(ParallelScope.Fixtures)]
-[RequiresScreenshotsDirectory]
+[RequireScreenshotsDirectory]
 [RequireWebEndpoint]
 [RequireSelenium]
 internal class WaitingForJavascriptResultToMatch : 
