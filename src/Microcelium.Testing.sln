@@ -7,20 +7,12 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microcelium.Testing", "Micr
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microcelium.Testing.Tests", "Microcelium.Testing.Tests\Microcelium.Testing.Tests.csproj", "{12629A33-9C1F-4764-953D-79E0FD5D18E0}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".project", ".project", "{071AD36B-F432-4C5D-919A-C4F4A0F259E4}"
-	ProjectSection(SolutionItems) = preProject
-		..\.editorconfig = ..\.editorconfig
-		..\.gitattributes = ..\.gitattributes
-		..\.gitignore = ..\.gitignore
-		..\Directory.Build.props = ..\Directory.Build.props
-		..\README.md = ..\README.md
-	EndProjectSection
-EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".build", ".build", "{2ED375EA-32FC-4CB7-967D-817445E34BD1}"
 	ProjectSection(SolutionItems) = preProject
 		..\.editorconfig = ..\.editorconfig
 		..\.gitattributes = ..\.gitattributes
 		..\.gitignore = ..\.gitignore
+		..\azure-pipelines.yml = ..\azure-pipelines.yml
 		..\Build.fsx = ..\Build.fsx
 		..\build.sh = ..\build.sh
 		..\Directory.Build.props = ..\Directory.Build.props
