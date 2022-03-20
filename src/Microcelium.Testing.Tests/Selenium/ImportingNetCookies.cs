@@ -3,7 +3,6 @@ using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
 using FluentAssertions;
-using Microcelium.Testing.Net;
 using Microcelium.Testing.Web;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -16,7 +15,7 @@ namespace Microcelium.Testing.Selenium;
 
 [Parallelizable(ParallelScope.Fixtures)]
 [RequiresWebEndpoint]
-internal class ImportingNetCookies : IRequireWebHostOverride, IRequireLogging, IConfigureWebHostAddress, IConfigureServices, IRequireServices
+internal class ImportingNetCookies : IRequireWebHostOverride, IRequireLogging, IConfigureServices, IRequireServices
 {
   private string? tempuri;
   private string? actualCookieValue;
@@ -70,14 +69,5 @@ internal class ImportingNetCookies : IRequireWebHostOverride, IRequireLogging, I
   public IHost Host { get; set; }
   public ILoggerFactory LoggerFactory { get; set; }
   public Uri HostUri { get; set; }
-
-  public string GetHostUri()
-  {
-    if (string.IsNullOrEmpty(tempuri))
-      tempuri = $"https://localhost:{TcpPort.NextFreePort()}";
-
-    return tempuri;
-  }
-
   public IServiceProvider Provider { get; set; }
 }

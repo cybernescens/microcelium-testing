@@ -23,7 +23,7 @@ public class RequiresWebEndpointAttribute : RequireHostAttribute
   {
     /* our special builder */
     webBuilder = WebApplication.CreateBuilder(Array.Empty<string>());
-    tempuri = $"https://localhost:{TcpPort.NextFreePort()}";
+    tempuri = $"http://localhost:{TcpPort.NextFreePort()}";
     if (test.Fixture is IConfigureWebHostAddress a)
       tempuri = a.GetHostUri();
 
@@ -44,7 +44,6 @@ public class RequiresWebEndpointAttribute : RequireHostAttribute
   {
     var web = (WebApplication)webFixture.Host;
 
-    web.UseHttpsRedirection();
     web.UseStaticFiles();
     web.UseRouting();
 

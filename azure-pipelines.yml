@@ -15,7 +15,6 @@ variables:
   VersionSuffix: $[counter(variables['VersionPrefix'], 0)]
 
 steps:
-- bash: dotnet dev-certs https --trust
 - task: NuGetAuthenticate@0
 - task: Cache@2
   inputs:
