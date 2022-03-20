@@ -56,7 +56,7 @@ public class RequiresWebEndpointAttribute : RequireHostAttribute
 
   protected override void OnHostBuilding(IHostBuilder builder, ITest test)
   {
-    if (test.Fixture is IConfigureHostWebHost h)
+    if (test.Fixture is IConfigureWebHost h)
       h.Configure(webBuilder.WebHost);
   }
 
