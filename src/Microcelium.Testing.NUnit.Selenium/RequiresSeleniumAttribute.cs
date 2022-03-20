@@ -224,7 +224,7 @@ public class RequiresSeleniumAttribute : RequireHostAttribute
 
     if (!string.IsNullOrEmpty(path))
     {
-      Console.WriteLine($"##vso[artifact.upload]{path}");
+      Console.WriteLine($"##vso[artifact.upload artifactname={fileName}]{path}");
     }
   }
 
