@@ -12,8 +12,8 @@ namespace Microcelium.Testing.Selenium.PageFixtures;
 
 [Parallelizable(ParallelScope.Fixtures)]
 [RequiresScreenshotsDirectory]
-[RequiresWebEndpoint]
-[RequiresSelenium]
+[RequireWebEndpoint]
+[RequireSelenium]
 internal class LoadingASiteAndNavigatingBetweenPages :
   IConfigureSeleniumWebDriverConfig,
   IRequireWebHostOverride, 

@@ -15,7 +15,7 @@ using NUnit.Framework;
 namespace Microcelium.Testing.Handlers;
 
 [Parallelizable(ParallelScope.None)]
-[RequiresWebEndpoint]
+[RequireWebEndpoint]
 internal class CookieContainerDelegatingHandlerFixtures : IRequireWebHostOverride, IConfigureServices, IRequireServices
 {
   private CookieContainer container = new();

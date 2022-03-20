@@ -10,8 +10,8 @@ namespace Microcelium.Testing.Selenium.WebDriverExtensionsFixtures;
 
 [Parallelizable(ParallelScope.Fixtures)]
 [RequiresScreenshotsDirectory]
-[RequiresWebEndpoint]
-[RequiresSelenium]
+[RequireWebEndpoint]
+[RequireSelenium]
 internal class WaitingForJavascriptResultToMatch : 
   IConfigureSeleniumWebDriverConfig,
   IRequireWebHostOverride, 

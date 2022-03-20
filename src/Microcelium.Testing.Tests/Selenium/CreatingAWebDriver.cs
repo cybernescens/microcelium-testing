@@ -13,8 +13,8 @@ using OpenQA.Selenium.Chrome;
 namespace Microcelium.Testing.Selenium;
 
 [Parallelizable(ParallelScope.Fixtures)]
-[RequiresWebEndpoint]
-[RequiresSelenium]
+[RequireWebEndpoint]
+[RequireSelenium]
 internal class CreatingAWebDriver : IRequireSeleniumHost, IConfigureHostApplication, IConfigureWebHostAddress
 {
   private string tempuri;

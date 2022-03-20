@@ -14,7 +14,7 @@ using NUnit.Framework;
 namespace Microcelium.Testing.Selenium;
 
 [Parallelizable(ParallelScope.Fixtures)]
-[RequiresWebEndpoint]
+[RequireWebEndpoint]
 internal class ImportingNetCookies : IRequireWebHostOverride, IRequireLogging, IConfigureServices, IRequireServices
 {
   private string? tempuri;

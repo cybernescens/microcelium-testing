@@ -13,8 +13,8 @@ namespace Microcelium.Testing.Selenium;
 
 [Parallelizable(ParallelScope.Fixtures)]
 [RequireDownloadDirectory]
-[RequiresWebEndpoint]
-[RequiresSelenium]
+[RequireWebEndpoint]
+[RequireSelenium]
 internal class CreatingAWebDriverThatDownloadsToASpecificDirectory : 
   IRequireDownloadDirectory, 
   IConfigureSeleniumWebDriverConfig,
