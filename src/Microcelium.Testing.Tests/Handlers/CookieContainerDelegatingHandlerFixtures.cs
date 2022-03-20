@@ -40,7 +40,12 @@ internal class CookieContainerDelegatingHandlerFixtures : IRequireWebHostOverrid
       .AddHttpClient(
         "cookie-delegate",
         client => { client.BaseAddress = HostUri; })
-      .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler { UseCookies = true, CookieContainer = container })
+      .ConfigurePrimaryHttpMessageHandler(
+        () => new HttpClientHandler {
+          UseCookies = true, 
+          CookieContainer = container, 
+          ClientCertificateOptions = ClientCertificateOption.Automatic
+        })
       .AddHttpMessageHandler(
         sp => new LoggingDelegatingHandler(sp.GetRequiredService<ILoggerFactory>()) { IncludeContents = false });
   }
@@ -54,29 +59,31 @@ internal class CookieContainerDelegatingHandlerFixtures : IRequireWebHostOverrid
     container.Add(HostUri, new Cookie("test1", "A"));
     container.Add(HostUri, new Cookie("test2", "B"));
 
-    using (var httpClient = factory.CreateClient("cookie-delegate"))
-    using (var response = await httpClient.GetAsync("/"))
+    using (var client = factory.CreateClient("cookie-delegate"))
+    using (var response = await client.GetAsync("/"))
       await response.Content.ReadAsStringAsync();
   }
 
   [Test]
   public void ServerReceivedCookiesFromContainer() =>
-    receivedCookies.Should().Equal(
-      ("test1", "A"),
-      ("test2", "B"));
+    receivedCookies
+      .Should()
+      .Equal(
+        ("test1", "A"),
+        ("test2", "B"));
 
   [Test]
   public void CookieContainerContainsReturnedCookiesAndOriginalCookies() =>
     container
       .GetCookies(HostUri)
-      .Should().Equal(
+      .Should()
+      .Equal(
         new Cookie("test1", "A", "/", HostUri.Host),
         new Cookie("test2", "B", "/", HostUri.Host),
         new Cookie("foo", "bar", "/", HostUri.Host),
         new Cookie("wibble", "wobble", "/", HostUri.Host));
 
   public IHost Host { get; set; }
-  public WebApplication Endpoint { get; set; }
   public Uri HostUri { get; set; }
   public IServiceProvider Provider { get; set; }
 }

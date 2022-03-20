@@ -15,12 +15,15 @@ variables:
   VersionSuffix: $[counter(variables['VersionPrefix'], 0)]
 
 steps:
+- bash: >
+    dotnet dev-certs https --clean
+    dotnet dev-certs https --trust
+- task: NuGetAuthenticate@0
 - task: Cache@2
   inputs:
     key: fake
-    path: ./fake
+    path: $(Pipeline.Workspace)/fake
     restoreKeys: fake
-- task: NuGetAuthenticate@0
 - bash: export Version="$(VersionPrefix).$(VersionSuffix)" && ./build.sh
 - task: NuGetCommand@2
   inputs:
