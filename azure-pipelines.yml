@@ -15,12 +15,14 @@ variables:
   VersionSuffix: $[counter(variables['VersionPrefix'], 0)]
 
 steps:
+- checkout: self
+  persistCredentials: true
 - task: NuGetAuthenticate@0
-- task: Cache@2
-  inputs:
-    key: fake
-    path: $(Build.Repository.LocalPath)/.fake
-    restoreKeys: fake
+# - task: Cache@2
+#   inputs:
+#     key: fake
+#     path: $(Build.Repository.LocalPath)/.fake
+#     restoreKeys: fake
 - bash: export Version="$(VersionPrefix).$(VersionSuffix)" && ./build.sh
 - task: NuGetCommand@2
   inputs:
@@ -28,4 +30,5 @@ steps:
     packagesToPush: '$(Build.BinariesDirectory)/**/*.nupkg'
     nuGetFeedType: 'internal'
     publishVstsFeed: 'a3336200-6a09-4f84-bc50-005bbda90364/a3b10c97-911e-4567-8b1e-4bb97c7701b4'
-    
+- bash: git tag $(Build.SourceBranchName)-$(Build.BuildNumber) && git push origin $(Build.SourceBranchName)-$(Build.BuildNumber)
+  workingDirectory: $(Build.SourcesDirectory)    
