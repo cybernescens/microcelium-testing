@@ -49,3 +49,4 @@ selenium-bin
 !Build.fsx.lock
 !build.fsx.lock
 **/bak/*
+/build.fsx.lock
