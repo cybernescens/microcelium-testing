@@ -18,8 +18,8 @@ steps:
 - task: NuGetAuthenticate@0
 - task: Cache@2
   inputs:
-    key: fake
-    path: $(Pipeline.Workspace)/fake
+    key: fake | Build.fsx.lock
+    path: $(Pipeline.Workspace)/.fake
     restoreKeys: fake
 - bash: export Version="$(VersionPrefix).$(VersionSuffix)" && ./build.sh
 - task: NuGetCommand@2
