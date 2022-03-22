@@ -11,7 +11,7 @@
     <EmbedUntrackedSources>true</EmbedUntrackedSources>
     <Authors>microcelium+DataDx</Authors>
     <Copyright>Copyright microcelium @ 2019</Copyright>
-    <LangVersion>Preview</LangVersion>
+    <LangVersion>Default</LangVersion>
     <DefineConstants Condition="'$(COMPUTERNAME)' == 'joe-nuc'">$(DefineConstants);DEVELOPER_MACHINE</DefineConstants>
   </PropertyGroup>
 </Project>
