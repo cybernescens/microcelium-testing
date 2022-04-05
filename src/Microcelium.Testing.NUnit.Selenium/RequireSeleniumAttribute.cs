@@ -219,9 +219,9 @@ public class RequireSeleniumAttribute : RequireHostAttribute
     }
   }
 
-  protected override void OnHostBuilding(IHostBuilder builder, ITest test) { }
+  protected override void OnBeforeCreateHost(IHostBuilder builder, ITest test) { }
 
-  protected override void OnHostBuilt(ITest test)
+  protected override void OnAfterCreateHost(ITest test)
   {
     screenshotOptions = GetSetting<ScreenshotOptions?>("selenium:screenshots") ?? ScreenshotOptions.Default;
     config = serviceScope!.ServiceProvider.GetRequiredService<WebDriverConfig>();

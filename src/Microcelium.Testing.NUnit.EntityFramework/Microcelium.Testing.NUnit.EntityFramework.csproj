@@ -1,0 +1,16 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>Microcelium.Testing.Data.EntityFramework</RootNamespace>
+    <NoWarn>$(NoWarn);1591</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Microcelium.Testing.Data.EntityFramework\Microcelium.Testing.Data.EntityFramework.csproj" />
+    <ProjectReference Include="..\Microcelium.Testing.NUnit\Microcelium.Testing.NUnit.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -4,7 +4,8 @@
     <TargetFramework>net6.0</TargetFramework>
     <Nullable>enable</Nullable>
     <NoWarn>1591</NoWarn>
-    <RootNamespace>Microcelium.Testing.NHibernate</RootNamespace>
+    <RootNamespace>Microcelium.Testing.Data.NHibernate</RootNamespace>
+    <NoWarn>$(NoWarn);1591</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
@@ -14,7 +15,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Microcelium.Testing.NHibernate\Microcelium.Testing.NHibernate.csproj" />
+    <ProjectReference Include="..\Microcelium.Testing.Data.NHibernate\Microcelium.Testing.Data.NHibernate.csproj" />
     <ProjectReference Include="..\Microcelium.Testing.NUnit\Microcelium.Testing.NUnit.csproj" />
     <ProjectReference Include="..\Microcelium.Testing\Microcelium.Testing.csproj" />
   </ItemGroup>

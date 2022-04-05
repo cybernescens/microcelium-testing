@@ -18,7 +18,7 @@ public sealed class RequireGenericHostAttribute : RequireHostAttribute
     fixture = EnsureFixture<RequireGenericHostAttribute, IRequireHost>(test);
   }
 
-  protected override void OnHostBuilt(ITest test)
+  protected override void OnAfterCreateHost(ITest test)
   {
     Fixture.Host = host!;
   }

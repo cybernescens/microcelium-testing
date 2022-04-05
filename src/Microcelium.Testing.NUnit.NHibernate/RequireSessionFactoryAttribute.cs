@@ -5,7 +5,7 @@ using NHibernate;
 using NHibernate.Cfg;
 using NUnit.Framework.Interfaces;
 
-namespace Microcelium.Testing.NHibernate;
+namespace Microcelium.Testing.Data.NHibernate;
 
 /// <summary>
 ///   Used to decorate a class to provider NHibernate support / access.
@@ -32,31 +32,31 @@ public class RequireSessionFactoryAttribute : RequireHostAttribute
 
   protected override void ApplyToContext() { AddToContext(nameof(ISessionFactory), sessionFactory); }
 
-  protected override void OnHostBuilding(IHostBuilder builder, ITest test)
+  protected override void OnBeforeCreateHost(IHostBuilder builder, ITest test)
   {
     configuration = new Configuration();
     if (test.Fixture is IConfigureSessionFactory sf)
       sf.Configure(configuration);
   }
 
-  protected override void OnHostBuilt(ITest test)
+  protected override void OnAfterCreateHost(ITest test)
   {
-    sessionFactory = this.serviceScope!.ServiceProvider.GetRequiredService<ISessionFactory>();
+    sessionFactory = serviceScope!.ServiceProvider.GetRequiredService<ISessionFactory>();
     ((IRequireSessionFactory)test.Fixture!).SessionFactory = sessionFactory;
   }
 
   protected override void OnEndBeforeTest(ITest test)
   {
+    using var session = sessionFactory.OpenSession();
     if (test.Fixture is ISetupData data)
-      data.SetupData();
+      data.SetupData(session);
   }
 
   protected override void OnStartAfterTest(ITest test)
   {
+    using var session = sessionFactory.OpenSession();
     if (test.Fixture is ICleanupData data)
-      data.CleanupData();
-
-    //SafelyTry.Dispose(sessionFactory);
+      data.CleanupData(session);
   }
 
   protected override void DefaultServicesConfiguration(HostBuilderContext ctx, IServiceCollection services)

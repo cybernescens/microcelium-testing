@@ -66,7 +66,7 @@ public class EnsureDirectoryAttribute : RequireHostAttribute
         Path.Combine(ctx.HostingEnvironment.ContentRootPath, directoryRelative ?? name)));
   }
 
-  protected override void OnHostBuilt(ITest test)
+  protected override void OnAfterCreateHost(ITest test)
   {
     var d = this.serviceScope!.ServiceProvider.GetRequiredService<DirectoryProvider>().GetDirectory();
 

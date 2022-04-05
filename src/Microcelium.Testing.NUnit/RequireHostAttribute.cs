@@ -60,16 +60,16 @@ public abstract class RequireHostAttribute : TestActionAttribute
   /// </summary>
   /// <param name="builder"></param>
   /// <param name="test"></param>
-  protected virtual void OnHostBuilding(IHostBuilder builder, ITest test) { }
+  protected virtual void OnBeforeCreateHost(IHostBuilder builder, ITest test) { }
 
   /// <summary>
   /// Runs after <see cref="CreateHostBuilder"/>
   /// </summary>
   /// <param name="test"></param>
-  protected virtual void OnHostBuilt(ITest test) { }
+  protected virtual void OnAfterCreateHost(ITest test) { }
 
   /// <summary>
-  /// Runs after <see cref="OnHostBuilt(ITest)"/> and after adding internal context and before <see cref="OnEndBeforeTest(ITest)"/>
+  /// Runs after <see cref="OnAfterCreateHost"/> and after adding internal context and before <see cref="OnEndBeforeTest(ITest)"/>
   /// </summary>
   protected abstract void ApplyToContext();
 
@@ -133,7 +133,7 @@ public abstract class RequireHostAttribute : TestActionAttribute
 
     builder.ConfigureServices(x => { x.AddSingleton(TestContext.CurrentContext); });
 
-    OnHostBuilding(builder, test);
+    OnBeforeCreateHost(builder, test);
 
     Fixture.Host = host = CreateHost(builder);
     configuration = host.Services.GetRequiredService<IConfiguration>();
@@ -146,7 +146,7 @@ public abstract class RequireHostAttribute : TestActionAttribute
     if (test.Fixture is IRequireServices services)
       services.Provider = serviceScope.ServiceProvider;
 
-    OnHostBuilt(test);
+    OnAfterCreateHost(test);
     
     AddToContext(nameof(IHost), Fixture.Host);
     AddToContext(nameof(IConfiguration), configuration);

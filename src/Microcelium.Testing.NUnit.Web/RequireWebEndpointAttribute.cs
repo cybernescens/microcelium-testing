@@ -40,7 +40,7 @@ public class RequireWebEndpointAttribute : RequireHostAttribute
     return web;
   }
 
-  protected override void OnHostBuilt(ITest test)
+  protected override void OnAfterCreateHost(ITest test)
   {
     var web = (WebApplication)webFixture.Host;
 
@@ -53,7 +53,7 @@ public class RequireWebEndpointAttribute : RequireHostAttribute
     web.RunAsync();
   }
 
-  protected override void OnHostBuilding(IHostBuilder builder, ITest test)
+  protected override void OnBeforeCreateHost(IHostBuilder builder, ITest test)
   {
     if (test.Fixture is IConfigureWebHost h)
       h.Configure(webBuilder);

@@ -1,4 +1,6 @@
-﻿namespace Microcelium.Testing.NHibernate;
+﻿using NHibernate;
+
+namespace Microcelium.Testing.Data.NHibernate;
 
 /// <summary>
 /// Decorate your fixture with this class to set up data prior to the test
@@ -8,5 +10,5 @@ public interface ICleanupData
   /// <summary>
   /// 
   /// </summary>
-  void CleanupData();
+  void CleanupData(ISession session);
 }
