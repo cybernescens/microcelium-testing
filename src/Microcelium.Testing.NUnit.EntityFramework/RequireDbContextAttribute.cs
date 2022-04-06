@@ -45,6 +45,10 @@ public abstract class RequireDbContextAttribute<TContext> : RequireHostAttribute
   protected override void OnEndBeforeTest(ITest test)
   {
     using var context = contextFactory.CreateDbContext();
+
+    if (test.Fixture is IEnsureSchema)
+      context.Database.EnsureCreated();
+
     if (test.Fixture is ISetupData<TContext> data)
       data.SetupData(context);
   }
@@ -52,8 +56,12 @@ public abstract class RequireDbContextAttribute<TContext> : RequireHostAttribute
   protected override void OnStartAfterTest(ITest test)
   {
     using var context = contextFactory.CreateDbContext();
+    
     if (test.Fixture is ICleanupData<TContext> data)
       data.CleanupData(context);
+
+    if (test.Fixture is IEnsureSchema)
+      context.Database.EnsureDeleted();
   }
 
   protected abstract void ApplyContextProvider(ITest test, IHostBuilder builder, DbContextOptionsBuilder options);

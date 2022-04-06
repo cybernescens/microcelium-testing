@@ -1,5 +1,5 @@
 ﻿using NUnit.Framework;
 
-namespace Microcelium.Testing.Acceptance;
+namespace Microcelium.Testing;
 
 public class ScenarioAttribute : TestAttribute { }

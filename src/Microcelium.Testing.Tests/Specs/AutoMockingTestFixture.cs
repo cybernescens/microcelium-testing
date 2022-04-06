@@ -5,7 +5,7 @@ using NUnit.Framework;
 
 namespace Microcelium.Testing.Specs;
 
-[Spec]
+[RequireGenericHost]
 [Parallelizable(ParallelScope.Children)]
 [TestFixture(typeof(WindsorAutoMockingContainer))]
 internal class AutoMockingTestFixture<TAutoMocker> : 

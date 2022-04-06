@@ -1,5 +1,8 @@
 ﻿using System;
+using System.Reflection;
+using System.Threading.Tasks;
 using Microcelium.Testing.Logging;
+using Microcelium.Testing.Specs;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -12,6 +15,9 @@ namespace Microcelium.Testing;
 
 public abstract class RequireHostAttribute : TestActionAttribute 
 {
+  private static readonly Type SpecsType = typeof(SpecsFor<,>);
+  private static readonly Type AsyncSpecsType = typeof(AsyncSpecsFor<,>);
+
   protected IHost? host;
   protected ILoggerFactory? loggerFactory;
   protected IServiceScope? serviceScope;
@@ -140,11 +146,11 @@ public abstract class RequireHostAttribute : TestActionAttribute
     loggerFactory = host.Services.GetRequiredService<ILoggerFactory>();
     serviceScope = host.Services.CreateScope();
 
-    if (test.Fixture is IRequireLogging logger)
-      logger.LoggerFactory = loggerFactory;
+    if (test.Fixture is IRequireLogging)
+      ((IRequireLogging)test.Fixture).LoggerFactory = loggerFactory;
 
-    if (test.Fixture is IRequireServices services)
-      services.Provider = serviceScope.ServiceProvider;
+    if (test.Fixture is IRequireServices)
+      ((IRequireServices)test.Fixture).Provider = serviceScope.ServiceProvider;
 
     OnAfterCreateHost(test);
     
@@ -163,6 +169,23 @@ public abstract class RequireHostAttribute : TestActionAttribute
     }
 
     OnEndBeforeTest(test);
+
+    var fixtureType = test.Fixture!.GetType();
+
+    if (IsSubclassOfGeneric(SpecsType, fixtureType))
+    {
+      fixtureType.GetMethod("Run", BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(
+        test.Fixture,
+        Array.Empty<object>());
+    }
+    else if (IsSubclassOfGeneric(AsyncSpecsType, fixtureType))
+    {
+      var task = (Task)fixtureType.GetMethod("Run", BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(
+        test.Fixture,
+        Array.Empty<object>())!;
+
+      task.GetAwaiter().GetResult();
+    }
   }
 
   protected static void AddToContext<T>(string key, T value)
@@ -217,4 +240,13 @@ public abstract class RequireHostAttribute : TestActionAttribute
   }
 
   public override ActionTargets Targets => ActionTargets.Test;
+
+  private static bool IsSubclassOfGeneric(Type generic, Type? type) =>
+    type != null &&
+    type != typeof(object) &&
+    (generic ==
+      (type.IsGenericType
+        ? type.GetGenericTypeDefinition()
+        : type) ||
+      IsSubclassOfGeneric(generic, type.BaseType));
 }

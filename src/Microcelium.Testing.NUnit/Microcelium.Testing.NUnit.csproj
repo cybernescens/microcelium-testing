@@ -20,8 +20,4 @@
     <ProjectReference Include="..\Microcelium.Testing\Microcelium.Testing.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="NUnit\" />
-  </ItemGroup>
-
 </Project>

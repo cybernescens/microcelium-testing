@@ -1,4 +1,5 @@
 ﻿using System;
+using Microsoft.Extensions.Hosting;
 
 namespace Microcelium.Testing.Specs;
 
@@ -7,7 +8,7 @@ namespace Microcelium.Testing.Specs;
 /// </summary>
 /// <typeparam name="TSut">the type of System Under Test</typeparam>
 /// <typeparam name="TResult">the type of result Result</typeparam>
-public abstract class SpecsFor<TSut, TResult>
+public abstract class SpecsFor<TSut, TResult> : IRequireHost
 {
   /// <summary>
   ///   The Subject that is is under test, created by <see cref="CreateSubject" />
@@ -61,4 +62,6 @@ public abstract class SpecsFor<TSut, TResult>
   ///   Deconstructs and disposes of this object
   /// </summary>
   ~SpecsFor() { TearDown(); }
+
+  public IHost Host { get; set; }
 }

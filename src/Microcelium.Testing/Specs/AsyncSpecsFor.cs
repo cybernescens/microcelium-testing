@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Hosting;
 
 namespace Microcelium.Testing.Specs;
 
@@ -8,7 +9,7 @@ namespace Microcelium.Testing.Specs;
 /// </summary>
 /// <typeparam name="TSut">the type of System Under Test</typeparam>
 /// <typeparam name="TResult">the type of result Result</typeparam>
-public abstract class AsyncSpecsFor<TSut, TResult>
+public abstract class AsyncSpecsFor<TSut, TResult> : IRequireHost
 {
   /// <summary>
   ///   The Subject that is is under test, created by <see cref="CreateSubject" />
@@ -63,4 +64,6 @@ public abstract class AsyncSpecsFor<TSut, TResult>
   ///   Deconstructs and disposes of this object
   /// </summary>
   ~AsyncSpecsFor() { TearDown(); }
+
+  public IHost Host { get; set; }
 }
