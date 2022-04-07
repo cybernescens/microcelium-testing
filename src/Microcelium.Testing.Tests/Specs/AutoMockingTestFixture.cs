@@ -7,6 +7,7 @@ namespace Microcelium.Testing.Specs;
 
 [RequireGenericHost]
 [Parallelizable(ParallelScope.Children)]
+[FixtureLifeCycle(LifeCycle.InstancePerTestCase)]
 [TestFixture(typeof(WindsorAutoMockingContainer))]
 internal class AutoMockingTestFixture<TAutoMocker> : 
   AutoMockSpecFor<FakeTestSubject, (int i, string s), TAutoMocker> 
