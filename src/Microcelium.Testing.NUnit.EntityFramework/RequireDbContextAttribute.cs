@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using NUnit.Framework;
 using NUnit.Framework.Interfaces;
 
 namespace Microcelium.Testing.Data.EntityFramework;
@@ -9,7 +10,7 @@ namespace Microcelium.Testing.Data.EntityFramework;
 public abstract class RequireDbContextAttribute<TContext> : RequireHostAttribute where TContext : DbContext
 {
   private IRequireDbContext<TContext> fixture = null!;
-  private IDbContextFactory<TContext> contextFactory = null!;
+  private IDbContextFactory<TContext>? contextFactory;
 
   protected override IRequireHost Fixture => fixture;
 
@@ -20,7 +21,11 @@ public abstract class RequireDbContextAttribute<TContext> : RequireHostAttribute
 
   protected override IHostBuilder CreateHostBuilder() => new HostBuilder();
   protected override IHost CreateHost(IHostBuilder builder) => builder.Build();
-  protected override void ApplyToContext() { throw new NotImplementedException(); }
+
+  protected override void ApplyToContext()
+  {
+    AddToContext(typeof(TContext).Name, contextFactory);
+  }
 
   protected override void OnBeforeCreateHost(IHostBuilder builder, ITest test)
   {
@@ -44,7 +49,7 @@ public abstract class RequireDbContextAttribute<TContext> : RequireHostAttribute
 
   protected override void OnEndBeforeTest(ITest test)
   {
-    using var context = contextFactory.CreateDbContext();
+    using var context = contextFactory!.CreateDbContext();
 
     if (test.Fixture is IEnsureSchema)
       context.Database.EnsureCreated();
@@ -55,6 +60,9 @@ public abstract class RequireDbContextAttribute<TContext> : RequireHostAttribute
 
   protected override void OnStartAfterTest(ITest test)
   {
+    if (contextFactory == null)
+      return;
+
     using var context = contextFactory.CreateDbContext();
     
     if (test.Fixture is ICleanupData<TContext> data)

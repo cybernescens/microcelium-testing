@@ -7,6 +7,12 @@ namespace Microcelium.Testing.Data.EntityFramework;
 
 public class RequireSqliteDbContextAttribute<TContext> : RequireDbContextAttribute<TContext> where TContext : DbContext
 {
+  protected override void EnsureFixture(ITest test)
+  {
+    base.EnsureFixture(test);
+    EnsureFixture<RequireSqliteDbContextAttribute<TContext>, IRequireSqliteDbContext<TContext>>(test);
+  }
+
   protected override void ApplyContextProvider(ITest test, IHostBuilder builder, DbContextOptionsBuilder options)
   {
     var connectionString = ((IRequireSqliteDbContext<TContext>)test.Fixture!).ConnectionString;
