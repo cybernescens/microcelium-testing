@@ -5,23 +5,44 @@ namespace Microcelium.Testing.Selenium.Chrome;
 
 public class ChromeDriverFactory
 {
-  public static IWebDriver Driver(WebDriverConfig configuration, RuntimeConfig runtime)
+  public static IWebDriver Driver(WebDriverConfig configuration, WebDriverRuntime runtime)
   {
     var path = File.Exists(Path.Combine(AppContext.BaseDirectory, "chromedriver.exe")) ? AppContext.BaseDirectory : ".";
     var service = ChromeDriverService.CreateDefaultService(path);
     service.HideCommandPromptWindow = true;
-
+    
     var options = new ChromeOptions();
-    options.AddArguments("--incognito");
-    options.AddArguments("--disable-extensions");
-    options.AddArguments("--no-sandbox");
-    options.AddArguments($"--window-size={configuration.Browser.Size.Width},{configuration.Browser.Size.Height}");
+    options.PageLoadStrategy = PageLoadStrategy.Normal;
+
+    if (runtime.AuthenticationRequired)
+    {
+      Directory.CreateDirectory(Path.Combine(UserDataDirectory, ProfileName));
+      options.AddArgument($"user-data-dir={UserDataDirectory.Replace("\\", "/")}");
+      options.AddArgument($"profile-directory=Selenium");
+      options.AddArgument("allow-profiles-outside-user-dir");
+    }
+    else
+    {
+      options.AddArgument("incognito");
+    }
+
+    //no-initial-navigation ⊗
+    //options.AddArgument("no-default-browser-check");
+    //options.AddArgument("no-initial-navigation");
+    //options.AddArgument("no-first-run");
+    //options.AddArgument("ignore-user-profile-mapping-for-tests");
+    //options.AddArgument("disable-notifications");
+    //options.AddArgument("dom-automation");
+    //options.AddArgument("browser-test");
+    options.AddArgument("disable-extensions");
+    options.AddArgument("disable-features=ChromeWhatsNewUI");
+    options.AddArgument($"window-size={configuration.Browser.Size.Width},{configuration.Browser.Size.Height}");
 
     if (configuration.Browser.Headless && string.IsNullOrEmpty(runtime.DownloadDirectory))
     {
-      options.AddArguments("--headless");
-      options.AddArguments("--disable-gpu");
-      options.AddArguments("--hide-scrollbars");
+      options.AddArgument("headless");
+      options.AddArgument("disable-gpu");
+      options.AddArgument("hide-scrollbars");
     }
 
     if (!string.IsNullOrEmpty(runtime.DownloadDirectory))
@@ -32,4 +53,9 @@ public class ChromeDriverFactory
 
     return new ChromeDriver(service, options, configuration.Timeout.Browser);
   }
+
+  public static string UserDataDirectory =>
+    Path.Combine(Environment.ExpandEnvironmentVariables("%LOCALAPPDATA%"), "Google", "Chrome", "Selenium Data");
+
+  public static string ProfileName => "Selenium";
 }

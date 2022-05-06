@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using FluentAssertions;
@@ -8,8 +9,6 @@ using NUnit.Framework;
 
 namespace Microcelium.Testing.Selenium;
 
-[Parallelizable(ParallelScope.Fixtures)]
-[RequireScreenshotsDirectory]
 [RequireGenericHost]
 internal class TakingScreenShots : IRequireLogging, IRequireScreenshots
 {
@@ -19,21 +18,30 @@ internal class TakingScreenShots : IRequireLogging, IRequireScreenshots
     var config = new WebDriverConfig { BaseUri = "https://www.google.com" };
     var factory = new WebDriverFactory(config);
 
-    using var inner = factory.Create(new RuntimeConfig { ScreenshotDirectory = ScreenshotDirectory });
-    using var driver = new WebDriverAdapter(inner, config, LoggerFactory);
+    var dir = Path.Combine(
+      TestContext.CurrentContext.TestDirectory,
+      DateTime.Now.ToString("yyyyMMddHHmmss"),
+      "Screenshots");
+
+    if (Directory.Exists(dir))
+      Directory.Delete(dir);
+
+    Directory.CreateDirectory(dir);
+
+    var runtime = new WebDriverRuntime { ScreenshotDirectory = dir };
+    using var inner = factory.Create(runtime);
+    using var driver = new WebDriverAdapter(inner, config, runtime, LoggerFactory);
     driver.Navigate().GoToUrl("https://www.google.com");
 
-    var imageName = Path.Combine(ScreenshotDirectory, $"{nameof(SavesScreenShot)}.png");
-    driver.SaveScreenshotForEachTab(imageName);
+    driver.SaveScreenshotForEachTab($"{nameof(SavesScreenShot)}.png");
 
-    var screenShotFile = Directory.EnumerateFiles(ScreenshotDirectory).Select(x => new FileInfo(x)).FirstOrDefault();
+    var screenShotFile = Directory.EnumerateFiles(dir).Select(x => new FileInfo(x)).FirstOrDefault();
     screenShotFile.Exists.Should()
-      .BeTrue("file '{0}' should exist", ScreenshotDirectory);
+      .BeTrue("file '{0}' should exist", dir);
 
     return Task.CompletedTask;
   }
 
   public IHost Host { get; set; }
   public ILoggerFactory LoggerFactory { get; set; }
-  public string ScreenshotDirectory { get; set; }
 }

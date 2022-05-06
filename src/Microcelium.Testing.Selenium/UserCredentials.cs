@@ -32,7 +32,7 @@ public interface ICredentialProvider
   /// Resolves user credentials from <see cref="AuthenticationConfig"/>
   /// </summary>
   /// <returns></returns>
-  Task<UserCredentials> FromConfig();
+  Task<UserCredentials?> FromConfig();
 
   /// <summary>
   /// Converts a secure string to a regular one
@@ -68,7 +68,7 @@ public abstract class CredentialProvider : ICredentialProvider
   }
 
   /// <inheritdoc />
-  public abstract Task<UserCredentials> FromConfig();
+  public abstract Task<UserCredentials?> FromConfig();
 
   /// <inheritdoc />
   public string SecureStringToString(SecureString value)
@@ -101,19 +101,19 @@ public class KeyVaultCredentialProvider : CredentialProvider
     this.client = client;
   }
 
-  public override async Task<UserCredentials> FromConfig()
+  public override async Task<UserCredentials?> FromConfig()
   {
     Validate(nameof(AuthenticationConfig.Username), x => x.Username);
     Validate(nameof(AuthenticationConfig.KeyVaultSecretName), x => x.KeyVaultSecretName);
 
-    if (cache.TryGetValue(config.Username!, out var credentials))
+    if (cache.TryGetValue(config.Username, out var credentials))
       return credentials;
 
     var response = await client.GetSecretAsync(config.KeyVaultSecretName);
     var password = AsSecureString(() => response.Value.Value);
-    credentials = new UserCredentials(config.Username!, password);
+    credentials = new UserCredentials(config.Username, password);
 
-    return cache.GetOrAdd(config.Username!, credentials);
+    return cache.GetOrAdd(config.Username, credentials);
   }
 }
 
@@ -126,13 +126,19 @@ public class LocalCredentialProvider : CredentialProvider
 
   public LocalCredentialProvider(AuthenticationConfig config) : base(config) { this.config = config; }
 
-  public override Task<UserCredentials> FromConfig()
+  public override Task<UserCredentials?> FromConfig()
   {
     Validate(nameof(AuthenticationConfig.Username), x => x.Username);
     Validate(nameof(AuthenticationConfig.Password), x => x.Password);
 
     var password = AsSecureString(() => Config.Password!);
 
-    return Task.FromResult(new UserCredentials(config.Username!, password));
+    return Task.FromResult(new UserCredentials(config.Username, password))!;
   }
+}
+
+public class NoCredentialProvider : ICredentialProvider
+{
+  public Task<UserCredentials?> FromConfig() => Task.FromResult(default(UserCredentials));
+  public string SecureStringToString(SecureString value) => string.Empty;
 }

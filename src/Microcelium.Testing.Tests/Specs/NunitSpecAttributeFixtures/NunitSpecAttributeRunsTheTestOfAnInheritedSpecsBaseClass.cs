@@ -4,7 +4,7 @@ using NUnit.Framework;
 
 namespace Microcelium.Testing.Specs.NunitSpecAttributeFixtures;
 
-[RequireGenericHost]
+[Spec]
 [Parallelizable(ParallelScope.Children)]
 internal class NunitSpecAttributeRunsTheTestOfAnInheritedSpecsBaseClass : DerivedSpecsFor<int, int>
 {
@@ -16,7 +16,7 @@ internal class NunitSpecAttributeRunsTheTestOfAnInheritedSpecsBaseClass : Derive
   public void ArrangeAndActAreRun() => Result.Should().Be(15);
 }
 
-[RequireGenericHost]
+[Spec]
 [Parallelizable(ParallelScope.Children)]
 internal class NunitSpecAttributeRunsTheTestOfAnInheritedAsyncSpecsBaseClass : DerivedAsyncSpecsFor<int, int>
 {

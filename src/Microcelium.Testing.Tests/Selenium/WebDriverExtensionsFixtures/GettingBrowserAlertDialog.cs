@@ -9,12 +9,10 @@ using OpenQA.Selenium;
 
 namespace Microcelium.Testing.Selenium.WebDriverExtensionsFixtures;
 
-[Parallelizable(ParallelScope.Fixtures)]
-[RequireScreenshotsDirectory]
 [RequireWebEndpoint]
 [RequireSelenium]
 internal class GettingBrowserAlertDialog :  
-  IConfigureSeleniumWebDriverConfig,
+  IConfigureWebDriverConfig,
   IRequireWebHostOverride, 
   IRequireScreenshots
 {
@@ -59,5 +57,4 @@ internal class GettingBrowserAlertDialog :
   public IHost Host { get; set; }
   public IWebDriverExtensions Driver { get; set; }
   public Uri HostUri { get; set; }
-  public string ScreenshotDirectory { get; set; }
 }

@@ -7,8 +7,3 @@ public interface IRequireSeleniumHost : IRequireHost
   /// </summary>
   IWebDriverExtensions Driver { get; set; }
 }
-
-public interface IConfigureSeleniumWebDriverConfig : IRequireSeleniumHost
-{
-  void Configure(WebDriverConfig config);
-}

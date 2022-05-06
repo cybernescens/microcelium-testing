@@ -8,6 +8,12 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="EnsureDirectoryAttribute.cs" />
+    <Compile Remove="RequireDownloadDirectoryAttribute.cs" />
+    <Compile Remove="RequireScreenshotsDirectoryAttribute.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="FluentAssertions" Version="6.5.1" />
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="6.0.1" />
     <PackageReference Include="NUnit" Version="3.13.2" />

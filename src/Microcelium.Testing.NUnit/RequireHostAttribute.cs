@@ -9,7 +9,6 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using NUnit.Framework;
 using NUnit.Framework.Interfaces;
-using NUnit.Framework.Internal;
 
 namespace Microcelium.Testing;
 
@@ -18,9 +17,10 @@ public abstract class RequireHostAttribute : TestActionAttribute
   private static readonly Type SpecsType = typeof(SpecsFor<,>);
   private static readonly Type AsyncSpecsType = typeof(AsyncSpecsFor<,>);
 
-  protected IHost? host;
-  protected ILoggerFactory? loggerFactory;
-  protected IServiceScope? serviceScope;
+  public IHost Host { get; set; } = null!;
+  public ILoggerFactory LoggerFactory { get; set; } = null!;
+
+  //protected IServiceScope? serviceScope;
   protected LogValidationContext? logContext;
   private bool requireLogValidation;
   private IConfiguration? configuration;
@@ -73,11 +73,6 @@ public abstract class RequireHostAttribute : TestActionAttribute
   /// </summary>
   /// <param name="test"></param>
   protected virtual void OnAfterCreateHost(ITest test) { }
-
-  /// <summary>
-  /// Runs after <see cref="OnAfterCreateHost"/> and after adding internal context and before <see cref="OnEndBeforeTest(ITest)"/>
-  /// </summary>
-  protected abstract void ApplyToContext();
 
   /// <summary>
   /// Is the last thing to run as part of <see cref="BeforeTest(ITest)"/>
@@ -137,66 +132,40 @@ public abstract class RequireHostAttribute : TestActionAttribute
     if (test.Fixture is IConfigureServices s)
       builder.ConfigureServices(s.Apply);
 
-    builder.ConfigureServices(x => { x.AddSingleton(TestContext.CurrentContext); });
+    builder.ConfigureServices(
+      x => {
+        x.AddSingleton(TestContext.CurrentContext);
+        x.AddSingleton(test);
+      });
 
     OnBeforeCreateHost(builder, test);
 
-    Fixture.Host = host = CreateHost(builder);
-    configuration = host.Services.GetRequiredService<IConfiguration>();
-    loggerFactory = host.Services.GetRequiredService<ILoggerFactory>();
-    serviceScope = host.Services.CreateScope();
+    Fixture.Host = Host = CreateHost(builder);
+    configuration = Host.Services.GetRequiredService<IConfiguration>();
+    LoggerFactory = Host.Services.GetRequiredService<ILoggerFactory>();
 
     if (test.Fixture is IRequireLogging)
-      ((IRequireLogging)test.Fixture).LoggerFactory = loggerFactory;
-
-    if (test.Fixture is IRequireServices)
-      ((IRequireServices)test.Fixture).Provider = serviceScope.ServiceProvider;
+      ((IRequireLogging)test.Fixture).LoggerFactory = LoggerFactory;
+    
+    if (test.Fixture is IRequireServices sp)
+      sp.Provider = Host.Services;
 
     OnAfterCreateHost(test);
     
-    AddToContext(nameof(IHost), Fixture.Host);
-    AddToContext(nameof(IConfiguration), configuration);
-    AddToContext(nameof(IServiceProvider), host.Services);
-    AddToContext(nameof(ILoggerFactory), loggerFactory);
-    AddToContext(nameof(IServiceScope), serviceScope);
-    ApplyToContext();
-
     if (requireLogValidation)
     {
-      logContext = serviceScope.ServiceProvider.GetRequiredService<LogValidationContext>();
+      logContext = Host.Services.GetRequiredService<LogValidationContext>();
       ((IRequireLogValidation)test.Fixture!).LogContext = logContext;
-      AddToContext(nameof(LogValidationContext), logContext);
     }
 
     OnEndBeforeTest(test);
-
-    var fixtureType = test.Fixture!.GetType();
-
-    if (IsSubclassOfGeneric(SpecsType, fixtureType))
-    {
-      fixtureType.GetMethod("Run", BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(
-        test.Fixture,
-        Array.Empty<object>());
-    }
-    else if (IsSubclassOfGeneric(AsyncSpecsType, fixtureType))
-    {
-      var task = (Task)fixtureType.GetMethod("Run", BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(
-        test.Fixture,
-        Array.Empty<object>())!;
-
-      task.GetAwaiter().GetResult();
-    }
-  }
-
-  protected static void AddToContext<T>(string key, T value)
-  {
-    TestExecutionContext.CurrentContext.CurrentTest.Properties.Set($"microcelium_{key}", value!);
   }
 
   protected virtual void DefaultAppConfiguration(HostBuilderContext ctx, IConfigurationBuilder config)
   {
     config.AddCommandLine(Environment.GetCommandLineArgs());
     config.AddJsonFile("test.settings.json", optional: true, reloadOnChange: false);
+    config.AddJsonFile("test.settings.local.json", optional: true, reloadOnChange: false);
     config.AddEnvironmentVariables("microcelium");
   }
 
@@ -235,11 +204,10 @@ public abstract class RequireHostAttribute : TestActionAttribute
   public override void AfterTest(ITest test)
   {
     OnStartAfterTest(test);
-    SafelyTry.Dispose(() => serviceScope);
     OnEndAfterTest(test);
   }
 
-  public override ActionTargets Targets => ActionTargets.Test;
+  public override ActionTargets Targets => ActionTargets.Suite;
 
   private static bool IsSubclassOfGeneric(Type generic, Type? type) =>
     type != null &&

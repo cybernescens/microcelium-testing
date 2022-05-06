@@ -72,6 +72,11 @@ public class BrowserConfig
   public string DriverFactory { get; set; } = "Microcelium.Testing.Selenium.Chrome.ChromeDriverFactory";
 
   /// <summary>
+  /// Browser Specific Configuration object
+  /// </summary>
+  public object? Properties { get;set; }
+
+  /// <summary>
   ///   The dimensions of the browser. Defaults to <code>1280</code>x<code>1024</code>;
   /// </summary>
   public Size Size { get; set; } = new(1280, 1024);
@@ -124,14 +129,10 @@ public class AuthenticationConfig
 
   public readonly struct CredentialModes
   {
+    public static readonly string None = "None";
     public static readonly string Local = "Local";
     public static readonly string KeyVault = "KeyVault";
   }
-
-  /// <summary>
-  /// The Client ID of the Proxy Application. Public Client Authorization Flow should be enabled as well
-  /// </summary>
-  //public string? ClientId { get; set; }
 
   /// <summary>
   /// The CredentialMode, use <code>Local</code> to use <see cref="Username"/> and <see cref="Password"/>
@@ -160,7 +161,7 @@ public class AuthenticationConfig
   /// <summary>
   /// The Username to login as
   /// </summary>
-  public string? Username { get; set; } = "SeleniumUser";
+  public string Username { get; set; } = "SeleniumUser";
 
   /// <summary>
   /// The password to use
@@ -168,9 +169,17 @@ public class AuthenticationConfig
   public string? Password { get; set; }
 
   /// <summary>
-  /// The scopes to request with OpenId
+  /// Path to initialize the site to that is anonymous. Selenium cannot import cookies
+  /// for the domain otherwise
   /// </summary>
-  //public string[] Scopes { get; set; } = Array.Empty<string>();
+  public string AnonymousPath { get; set; } = "/favicon.ico";
+
+  /// <summary>
+  /// No Credentials
+  /// </summary>
+  /// <returns></returns>
+  public bool NoCredentials() => 
+    CredentialMode.Equals(CredentialModes.None, StringComparison.OrdinalIgnoreCase);
 
   /// <summary>
   /// Are we using Local Credentials

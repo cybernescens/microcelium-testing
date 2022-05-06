@@ -12,7 +12,6 @@ namespace Microcelium.Testing;
 
 public class EnsureDirectoryAttribute : RequireHostAttribute
 {
-  private readonly Type directoryType;
   private readonly bool purge;
   private readonly string name;
 
@@ -22,9 +21,8 @@ public class EnsureDirectoryAttribute : RequireHostAttribute
   private string? directoryRelative;
   private PropertyInfo property;
 
-  public EnsureDirectoryAttribute(Type directoryType, bool purge, string name)
+  public EnsureDirectoryAttribute(bool purge, string name)
   {
-    this.directoryType = directoryType;
     this.purge = purge;
     this.name = name;
   }
@@ -33,16 +31,7 @@ public class EnsureDirectoryAttribute : RequireHostAttribute
 
   protected override void EnsureFixture(ITest test)
   {
-    if (!directoryType.IsAssignableTo(typeof(IRequireDirectory)) || directoryType == typeof(IRequireDirectory))
-      throw new ArgumentException(
-        nameof(directoryType),
-        $"{directoryType.FullName} should implement {typeof(IRequireDirectory).FullName}");
-
-    fixture = (IRequireDirectory)EnsureFixture(test, typeof(EnsureDirectoryAttribute), directoryType);
-
-    var properties = directoryType.GetProperties().ToArray();
-    if (properties.Length != 1 || properties[0].GetMethod == null || properties[0].SetMethod == null)
-      throw new ArgumentException(nameof(directoryType), $"{directoryType.FullName} should have one property with a 'get' and 'set'.");
+    fixture = EnsureFixture<EnsureDirectoryAttribute<TDirectory>, TDirectory>(test);
 
     property = properties[0];
     getMethod = properties[0].GetMethod!;
@@ -61,9 +50,7 @@ public class EnsureDirectoryAttribute : RequireHostAttribute
 
   protected override void DefaultServicesConfiguration(HostBuilderContext ctx, IServiceCollection services)
   {
-    services.AddScoped(
-      _ => new DirectoryProvider(
-        Path.Combine(ctx.HostingEnvironment.ContentRootPath, directoryRelative ?? name)));
+    
   }
 
   protected override void OnAfterCreateHost(ITest test)

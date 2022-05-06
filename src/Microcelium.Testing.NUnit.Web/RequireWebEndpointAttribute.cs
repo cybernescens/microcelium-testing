@@ -59,10 +59,5 @@ public class RequireWebEndpointAttribute : RequireHostAttribute
       h.Configure(webBuilder);
   }
 
-  protected override void ApplyToContext()
-  {
-    AddToContext(nameof(WebApplication), (WebApplication)webFixture.Host);
-  }
-
   protected override void OnStartAfterTest(ITest test) { }
 }

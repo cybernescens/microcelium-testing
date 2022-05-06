@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Microcelium.Testing.Web;
@@ -11,13 +10,11 @@ using OpenQA.Selenium;
 
 namespace Microcelium.Testing.Selenium;
 
-[Parallelizable(ParallelScope.Fixtures)]
-[RequireDownloadDirectory]
 [RequireWebEndpoint]
 [RequireSelenium]
 internal class CreatingAWebDriverThatDownloadsToASpecificDirectory : 
   IRequireDownloadDirectory, 
-  IConfigureSeleniumWebDriverConfig,
+  IConfigureWebDriverConfig,
   IRequireWebHostOverride
 {
   public void Configure(WebDriverConfig config)
@@ -44,7 +41,7 @@ internal class CreatingAWebDriverThatDownloadsToASpecificDirectory :
   {
     Driver.Navigate().GoToUrl(HostUri);
     Driver.FindElement(By.CssSelector("a[href='download']")).Click();
-    var fileInfo = Driver.WaitForFileDownload(DownloadDirectory, "download.txt");
+    var fileInfo = Driver.WaitForFileDownload("download.txt");
 
     fileInfo.Should().NotBeNull();
     fileInfo!.Exists.Should().BeTrue("file '{0}' should exist", fileInfo.FullName);
@@ -52,7 +49,6 @@ internal class CreatingAWebDriverThatDownloadsToASpecificDirectory :
     return Task.CompletedTask;
   }
 
-  public string DownloadDirectory { get; set; }
   public IHost Host { get; set; }
   public IWebDriverExtensions Driver { get; set; }
   public Uri HostUri { get; set; }

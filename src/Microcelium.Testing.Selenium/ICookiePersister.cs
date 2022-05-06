@@ -24,6 +24,12 @@ public interface ICookiePersister
   Task<CookieContainer> Retrieve(object? state = null);
 
   /// <summary>
+  /// Clears all cookies 
+  /// </summary>
+  /// <returns></returns>
+  Task Reset();
+
+  /// <summary>
   /// Has the persister been initialized from its perspective
   /// </summary>
   /// <value></value>

@@ -17,19 +17,22 @@ public sealed class WebDriverAdapter : IWebDriverExtensions
 {
   private readonly IWebDriver driver;
   private readonly WebDriverConfig config;
+  private readonly WebDriverRuntime runtime;
   private readonly ILoggerFactory loggerFactory;
   private readonly ILogger<WebDriverAdapter> log;
 
-  private readonly BrowserScreenshotCapturer? capturer;
+  private readonly BrowserScreenshotCapturer capturer;
   private bool disposed;
 
   public WebDriverAdapter(
     IWebDriver driver, 
     WebDriverConfig config,
+    WebDriverRuntime runtime,
     ILoggerFactory loggerFactory)
   {
     this.driver = driver;
     this.config = config;
+    this.runtime = runtime;
     this.loggerFactory = loggerFactory;
     this.log = loggerFactory.CreateLogger<WebDriverAdapter>();
     this.capturer = new BrowserScreenshotCapturer(this, loggerFactory);
@@ -53,6 +56,7 @@ public sealed class WebDriverAdapter : IWebDriverExtensions
   public string CurrentWindowHandle => driver.CurrentWindowHandle;
   public ReadOnlyCollection<string> WindowHandles => driver.WindowHandles;
   public WebDriverConfig Config => config;
+  public WebDriverRuntime Runtime => runtime;
   public ILoggerFactory LoggerFactory => loggerFactory;
   public Screenshot GetScreenshot() => ((ITakesScreenshot)driver).GetScreenshot();
 
@@ -74,9 +78,10 @@ public sealed class WebDriverAdapter : IWebDriverExtensions
 
   /// <summary>
   /// </summary>
-  /// <param name="directoryPath"></param>
+  /// <param name="fileName"></param>
   /// <returns></returns>
-  public string SaveScreenshotForEachTab(string directoryPath) => capturer.SaveScreenshotForEachTab(directoryPath);
+  public string SaveScreenshotForEachTab(string fileName) =>
+    capturer.SaveScreenshotForEachTab(Path.Combine(runtime.ScreenshotDirectory!, fileName))!;
 
   ///// <summary>
   ///// </summary>
@@ -106,9 +111,17 @@ public sealed class WebDriverAdapter : IWebDriverExtensions
       .ForEach(
         c => {
           c.Domain = c.Domain.Contains("localhost", StringComparison.OrdinalIgnoreCase) ? null : c.Domain;
-          //var domain = c.Domain.Equals("localhost", StringComparison.CurrentCultureIgnoreCase) ? null : c.Domain;
-          var cookie = new SeleniumCookie(c.Name, c.Value, c.Domain, c.Path, c.Expired ? c.Expires : null);
           
+          var cookie = new SeleniumCookie(
+            c.Name,
+            c.Value,
+            c.Domain,
+            c.Path,
+            c.Expired ? c.Expires : null,
+            c.Secure,
+            c.HttpOnly,
+            "Lax");
+
           driver.Manage()
             .Cookies
             .AddCookie(cookie);
@@ -124,7 +137,16 @@ public sealed class WebDriverAdapter : IWebDriverExtensions
         .ToList();
 
     cookies.ForEach(
-      x => container.Add(new NetCookie(x.Name, x.Value, x.Path, x.Domain)));
+      x => {
+        var cookie = new NetCookie(x.Name, x.Value, x.Path, x.Domain);
+        cookie.Secure = x.Secure;
+        cookie.HttpOnly = x.IsHttpOnly;
+
+        if (x.Expiry != null)
+          cookie.Expires = x.Expiry.Value;
+        
+        container.Add(cookie);
+      });
   }
 
   /// <summary>
@@ -159,8 +181,8 @@ public sealed class WebDriverAdapter : IWebDriverExtensions
   {
     var result = 
       WaitForJavascriptResult("(window.jQuery || { active: 0 } ).active", 0) &&
-      WaitForJavascriptResult("((window.jQuery.ajax || { ajax: null } ).ajax || { active: 0 }).active", 0) &&
-      WaitForJavascriptResult("$ && $('.dataTables_processing').is(':visible') === false ? 0 : 1", 0) &&
+      WaitForJavascriptResult("((window.jQuery || { ajax: null } ).ajax || { active: 0 }).active", 0) &&
+      WaitForJavascriptResult("window.jQuery && window.jQuery('.dataTables_processing').is(':visible') === false ? 0 : 1", 0) &&
       WaitForJavascriptResult("document.readyState", "complete");
 
     return result;
@@ -183,14 +205,11 @@ public sealed class WebDriverAdapter : IWebDriverExtensions
 
   /// <summary>
   /// </summary>
-  /// <param name="directory"></param>
   /// <param name="fileMask"></param>
   /// <returns></returns>
-  public FileInfo? WaitForFileDownload(
-    string directory,
-    string fileMask) =>
+  public FileInfo? WaitForFileDownload(string fileMask) =>
     new DownloadHelper(config.Timeout.Download, loggerFactory)
-      .WaitForFileDownload(new DirectoryInfo(directory), fileMask);
+      .WaitForFileDownload(new DirectoryInfo(runtime.DownloadDirectory!), fileMask);
 
   /// <summary>
   /// </summary>

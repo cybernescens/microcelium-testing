@@ -30,8 +30,6 @@ public class RequireSessionFactoryAttribute : RequireHostAttribute
   protected override IHostBuilder CreateHostBuilder() => new HostBuilder();
   protected override IHost CreateHost(IHostBuilder builder) => builder.Build();
 
-  protected override void ApplyToContext() { AddToContext(nameof(ISessionFactory), sessionFactory); }
-
   protected override void OnBeforeCreateHost(IHostBuilder builder, ITest test)
   {
     configuration = new Configuration();
@@ -41,7 +39,7 @@ public class RequireSessionFactoryAttribute : RequireHostAttribute
 
   protected override void OnAfterCreateHost(ITest test)
   {
-    sessionFactory = serviceScope!.ServiceProvider.GetRequiredService<ISessionFactory>();
+    sessionFactory = Host.Services.GetRequiredService<ISessionFactory>();
     ((IRequireSessionFactory)test.Fixture!).SessionFactory = sessionFactory;
   }
 

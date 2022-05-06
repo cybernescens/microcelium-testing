@@ -1,7 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using NUnit.Framework;
 using NUnit.Framework.Interfaces;
 
 namespace Microcelium.Testing.Data.EntityFramework;
@@ -22,11 +21,6 @@ public abstract class RequireDbContextAttribute<TContext> : RequireHostAttribute
   protected override IHostBuilder CreateHostBuilder() => new HostBuilder();
   protected override IHost CreateHost(IHostBuilder builder) => builder.Build();
 
-  protected override void ApplyToContext()
-  {
-    AddToContext(typeof(TContext).Name, contextFactory);
-  }
-
   protected override void OnBeforeCreateHost(IHostBuilder builder, ITest test)
   {
     builder.ConfigureServices(
@@ -43,7 +37,7 @@ public abstract class RequireDbContextAttribute<TContext> : RequireHostAttribute
 
   protected override void OnAfterCreateHost(ITest test)
   {
-    contextFactory = serviceScope!.ServiceProvider.GetRequiredService<IDbContextFactory<TContext>>();
+    contextFactory = Host.Services.GetRequiredService<IDbContextFactory<TContext>>();
     ((IRequireDbContext<TContext>)test.Fixture!).DbContextFactory = contextFactory;
   }
 

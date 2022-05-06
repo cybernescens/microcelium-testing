@@ -9,12 +9,10 @@ using OpenQA.Selenium;
 
 namespace Microcelium.Testing.Selenium.WebDriverExtensionsFixtures;
 
-[Parallelizable(ParallelScope.Fixtures)]
-[RequireScreenshotsDirectory]
 [RequireWebEndpoint]
 [RequireSelenium]
 internal class CheckIfElementExists :  
-  IConfigureSeleniumWebDriverConfig,
+  IConfigureWebDriverConfig,
   IRequireWebHostOverride, 
   IRequireScreenshots
 {

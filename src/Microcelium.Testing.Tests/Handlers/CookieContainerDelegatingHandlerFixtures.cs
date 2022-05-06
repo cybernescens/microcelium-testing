@@ -13,7 +13,6 @@ using NUnit.Framework;
 
 namespace Microcelium.Testing.Handlers;
 
-[Parallelizable(ParallelScope.None)]
 [RequireWebEndpoint]
 internal class CookieContainerDelegatingHandlerFixtures : IRequireWebHostOverride, IConfigureServices, IRequireServices
 {
@@ -59,9 +58,7 @@ internal class CookieContainerDelegatingHandlerFixtures : IRequireWebHostOverrid
   public void ServerReceivedCookiesFromContainer() =>
     receivedCookies
       .Should()
-      .Equal(
-        ("test1", "A"),
-        ("test2", "B"));
+      .Contain(new[] { ("test1", "A"), ("test2", "B") });
 
   [Test]
   public void CookieContainerContainsReturnedCookiesAndOriginalCookies() =>

@@ -12,7 +12,6 @@ using OpenQA.Selenium.Chrome;
 
 namespace Microcelium.Testing.Selenium;
 
-[Parallelizable(ParallelScope.Fixtures)]
 [RequireWebEndpoint]
 [RequireSelenium]
 internal class CreatingAWebDriver : IRequireSeleniumHost, IConfigureHostApplication, IConfigureWebHostAddress

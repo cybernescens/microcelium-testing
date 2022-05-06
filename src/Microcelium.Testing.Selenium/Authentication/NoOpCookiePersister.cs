@@ -14,8 +14,10 @@ public class NoOpCookiePersister : ICookiePersister
   /// <inheritdoc />
   public Task<CookieContainer> Retrieve(object? state = null) => Task.FromResult(new CookieContainer());
 
+  public Task Reset() => Task.CompletedTask;
+
   /// <inheritdoc />
-  public bool Initialized => true;
+  public bool Initialized => false;
 }
 
 /// <summary>

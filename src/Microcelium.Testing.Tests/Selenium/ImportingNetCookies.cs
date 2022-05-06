@@ -13,11 +13,9 @@ using NUnit.Framework;
 
 namespace Microcelium.Testing.Selenium;
 
-[Parallelizable(ParallelScope.Fixtures)]
 [RequireWebEndpoint]
 internal class ImportingNetCookies : IRequireWebHostOverride, IRequireLogging, IConfigureServices, IRequireServices
 {
-  private string? tempuri;
   private string? actualCookieValue;
   private string expectedCookieValue = "Bar";
   private readonly CookieContainer cookieContainer = new();
@@ -52,9 +50,10 @@ internal class ImportingNetCookies : IRequireWebHostOverride, IRequireLogging, I
     var wdf = new WebDriverFactory(config);
 
     var factory = Provider.GetRequiredService<IHttpClientFactory>();
-    
-    using var inner = wdf.Create(new RuntimeConfig());
-    using var driver = new WebDriverAdapter(inner, config, LoggerFactory);
+
+    var runtime = new WebDriverRuntime();
+    using var inner = wdf.Create(runtime);
+    using var driver = new WebDriverAdapter(inner, config, runtime, LoggerFactory);
 
     driver.Navigate().GoToUrl(HostUri);
     driver.ImportCookies(cookieContainer, HostUri);

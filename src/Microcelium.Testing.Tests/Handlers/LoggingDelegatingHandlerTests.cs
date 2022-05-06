@@ -13,7 +13,6 @@ using NUnit.Framework;
 
 namespace Microcelium.Testing.Handlers;
 
-[Parallelizable(ParallelScope.None)]
 [RequireWebEndpoint]
 internal class LoggingDelegatingHandlerTests :
   IRequireWebHostOverride, 

@@ -8,12 +8,10 @@ using NUnit.Framework;
 
 namespace Microcelium.Testing.Selenium.WebDriverExtensionsFixtures;
 
-[Parallelizable(ParallelScope.Fixtures)]
-[RequireScreenshotsDirectory]
 [RequireWebEndpoint]
 [RequireSelenium]
 internal class WaitingForJavascriptResultToMatch : 
-  IConfigureSeleniumWebDriverConfig,
+  IConfigureWebDriverConfig,
   IRequireWebHostOverride, 
   IRequireScreenshots
 {
@@ -44,5 +42,4 @@ internal class WaitingForJavascriptResultToMatch :
   public IHost Host { get; set; }
   public IWebDriverExtensions Driver { get; set; }
   public Uri HostUri { get; set; }
-  public string ScreenshotDirectory { get; set; }
 }

@@ -6,7 +6,6 @@ using NUnit.Framework;
 
 namespace Microcelium.Testing.SafelyTryFixtures.CallActionOnObject;
 
-[Parallelizable(ParallelScope.None)]
 [RequireGenericHost]
 internal class CallingActionOnAnObjectThatThrowsAnException : IRequireLogValidation, IRequireLogging
 {

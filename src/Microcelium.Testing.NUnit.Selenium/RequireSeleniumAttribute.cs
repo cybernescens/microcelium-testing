@@ -13,7 +13,6 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using NUnit.Framework;
 using NUnit.Framework.Interfaces;
-using OpenQA.Selenium;
 
 namespace Microcelium.Testing.Selenium;
 
@@ -22,7 +21,6 @@ public class RequireSeleniumAttribute : RequireHostAttribute
   private static readonly Type RequiresWebType = typeof(IRequireWebSite<>);
   
   private string? downloadDirectory;
-  private bool authenticationRequired;
   private bool screenshotsRequired;
   private string? screenshotsDirectory;
   private bool websiteRequired;
@@ -40,6 +38,7 @@ public class RequireSeleniumAttribute : RequireHostAttribute
   private MethodInfo websiteInitialize;
   private AssemblyScannerResults scannedAssemblies;
   private ICookiePersister cookiePersister;
+  private IServiceScope seleniumScope = null!;
 
   protected override IRequireHost Fixture => fixture;
 
@@ -64,16 +63,45 @@ public class RequireSeleniumAttribute : RequireHostAttribute
     services.AddSingleton(config.Authentication);
     services.AddSingleton(config);
 
+    services.AddSingleton<IDirectoryProviderFactory>(
+      sp => new DirectoryProviderFactory(sp.GetServices<DirectoryProvider>().ToArray()));
+
+    services.AddSingleton<DirectoryProvider, DownloadDirectoryProvider>();
+    services.AddSingleton<DirectoryProvider, ScreenshotDirectoryProvider>();
+    services.AddSingleton<DirectoryProvider, ContentRootDirectoryProvider>();
+
     services.AddSingleton<WebDriverFactory>();
 
-    services.AddScoped(_ => new RuntimeConfig {
-      DownloadDirectory = downloadDirectory,
-      ScreenshotDirectory = screenshotsDirectory
+    services.AddScoped(sp => {
+      var test = sp.GetRequiredService<ITest>();
+
+      var runtime = new WebDriverRuntime {
+        AuthenticationRequired = test.Fixture is IRequireAuthentication,
+        ContentRootDirectory = ctx.HostingEnvironment.ContentRootPath
+      };
+
+      if (test.Fixture is IRequireDownloadDirectory)
+      {
+        var provider = sp.GetRequiredService<IDirectoryProviderFactory>().Create<IRequireDownloadDirectory>();
+        runtime.DownloadDirectory = provider.GetDirectory(ctx.HostingEnvironment.ContentRootPath);
+      }
+
+      if (test.Fixture is IRequireScreenshots)
+      {
+        var provider = sp.GetRequiredService<IDirectoryProviderFactory>().Create<IRequireScreenshots>();
+        runtime.ScreenshotDirectory = provider.GetDirectory(ctx.HostingEnvironment.ContentRootPath);
+      }
+      
+      return runtime;
     });
 
     RegisterCookiePersister(ctx, services);
 
-    if (config.Authentication.IsLocalCredentials())
+    if (config.Authentication.NoCredentials())
+    {
+      services.AddSingleton<ICredentialProvider, NoCredentialProvider>();
+    }
+    else if (config.Authentication.IsLocalCredentials())
     {
       services.AddSingleton<ICredentialProvider, LocalCredentialProvider>();
     }
@@ -86,47 +114,18 @@ public class RequireSeleniumAttribute : RequireHostAttribute
 
       services.AddSingleton<ICredentialProvider, KeyVaultCredentialProvider>();
     }
-
-    if (authenticationRequired)
-    {
-      services.AddScoped(
-        sp => {
-          var cfg = sp.GetRequiredService<WebDriverConfig>();
-          var runtime = sp.GetRequiredService<RuntimeConfig>();
-          var d = sp.GetRequiredService<WebDriverFactory>().Create(runtime);
-          var jar = d.Manage().Cookies;
-          jar.DeleteAllCookies();
-          
-          var persister = sp.GetRequiredService<ICookiePersister>();
-          var container = persister.Retrieve().GetAwaiter().GetResult();
-
-          container
-            .GetCookies(new Uri(cfg.BaseUri))
-            .Select(
-              c => {
-                c.Domain = c.Domain.Contains("localhost") ? null : c.Domain;
-                return c;
-              })
-            .ToList()
-            .ForEach(cookie => jar.AddCookie(
-              new Cookie(cookie.Name, cookie.Value, cookie.Domain, cookie.Path, null)));
-
-          return d;
-        });
-    }
-    else
-    {
-      services.AddScoped(
-        sp => {
-          var runtime = sp.GetRequiredService<RuntimeConfig>();
-          return sp.GetRequiredService<WebDriverFactory>().Create(runtime);
-        });
-    }
+    
+    services.AddScoped(
+      sp => {
+        var runtime = sp.GetRequiredService<WebDriverRuntime>();
+        return sp.GetRequiredService<WebDriverFactory>().Create(runtime);
+      });
 
     services.AddScoped<IWebDriverExtensions, WebDriverAdapter>();
 
     if (websiteRequired && websiteType != null)
     {
+      services.AddScoped(websiteType, websiteType);
       services.AddScoped(typeof(WebSite), websiteType);
 
       /* use scanner to register all possible combinations */
@@ -182,20 +181,9 @@ public class RequireSeleniumAttribute : RequireHostAttribute
       .GetScannableAssemblies();
 
     /* these should be set by another ITestAction and should be prior to this one on the fixture */
-    if (test.Fixture is IRequireDownloadDirectory dd)
-    {
-      downloadRequired = true;
-      downloadDirectory = dd.DownloadDirectory;
-    }
-
-    if (test.Fixture is IRequireScreenshots ss)
-    {
-      screenshotsRequired = true;
-      screenshotsDirectory = ss.ScreenshotDirectory;
-    }
+    downloadRequired = test.Fixture is IRequireDownloadDirectory;
+    screenshotsRequired = test.Fixture is IRequireScreenshots;
     
-    authenticationRequired = test.Fixture is IRequireAuthentication;
-
     var requireSiteType = test.Fixture!
       .GetType()
       .GetInterfaces()
@@ -224,38 +212,42 @@ public class RequireSeleniumAttribute : RequireHostAttribute
   protected override void OnAfterCreateHost(ITest test)
   {
     screenshotOptions = GetSetting<ScreenshotOptions?>("selenium:screenshots") ?? ScreenshotOptions.Default;
-    config = serviceScope!.ServiceProvider.GetRequiredService<WebDriverConfig>();
-    fixture.Driver = driver = serviceScope!.ServiceProvider.GetRequiredService<IWebDriverExtensions>();
-    cookiePersister = serviceScope!.ServiceProvider.GetRequiredService<ICookiePersister>();
+    seleniumScope = Host.Services.CreateScope();
+    config = seleniumScope.ServiceProvider.GetRequiredService<WebDriverConfig>();
+    fixture.Driver = driver = seleniumScope.ServiceProvider.GetRequiredService<IWebDriverExtensions>();
+    cookiePersister = seleniumScope.ServiceProvider.GetRequiredService<ICookiePersister>();
 
     if (websiteRequired)
     {
-      website = serviceScope!.ServiceProvider.GetRequiredService<WebSite>();
+      website = (WebSite)seleniumScope.ServiceProvider.GetRequiredService(websiteType!);
       websiteSetProperty.Invoke(test.Fixture, new object?[] { website });
     }
   }
 
-  protected override void ApplyToContext()
-  {
-    AddToContext(nameof(ICookiePersister), cookiePersister);
-    AddToContext(nameof(WebDriverConfig), config);
-    AddToContext(nameof(IWebDriverExtensions), driver);
-    
-    if (websiteRequired && website != null)
-      AddToContext(nameof(WebSite), website);
-  }
-
   protected override void OnEndBeforeTest(ITest test)
   {
-    if (authenticationRequired && !cookiePersister.Initialized)
+    if (test.Fixture is IConfigureWebDriverConfig wdc)
+      wdc.Configure(config);
+
+    if (test.Fixture is IRequireAuthentication && !cookiePersister.Initialized)
     { 
       /* test should fail anyway, but lets log it */
-      loggerFactory!.CreateLogger<RequireSeleniumAttribute>()
+      this.LoggerFactory!.CreateLogger<RequireSeleniumAttribute>()
         .LogWarning($"fixture implements `{nameof(IRequireAuthentication)}` but no cookies found.");
     }
+    else if (test.Fixture is IRequireAuthentication)
+    {
+      /* this assumes a user has somehow persisted the cookies; we don't automate that */
+      var container = cookiePersister.Retrieve().GetAwaiter().GetResult();
+      var path =
+        config.Authentication.AnonymousPath.StartsWith("/", StringComparison.CurrentCulture)
+          ? config.Authentication.AnonymousPath.Substring(1)
+          : config.Authentication.AnonymousPath;
 
-    if (test.Fixture is IConfigureSeleniumWebDriverConfig wdc)
-      wdc.Configure(config);
+      driver.Navigate().GoToUrl(new Uri(config.BaseUri) + path);
+      //driver.DefinitivelyWaitForAnyAjax();
+      driver.ImportCookies(container, new Uri(config.BaseUri));
+    }
 
     if (websiteRequired)
     {
@@ -274,8 +266,7 @@ public class RequireSeleniumAttribute : RequireHostAttribute
 
     if (screenshots)
     {
-      SafelyTry.Action(
-        () => SaveScreenshotForEachTab(((IRequireScreenshots)test.Fixture!).ScreenshotDirectory!, "-Pre"));
+      SafelyTry.Action(() => SaveScreenshotForEachTab(CleanPath($"{test.Name}-Pre")));
     }
   }
 
@@ -288,18 +279,18 @@ public class RequireSeleniumAttribute : RequireHostAttribute
 
     if (screenshots)
     {
-      var dir = ((IRequireScreenshots)test.Fixture!).ScreenshotDirectory!;
-      SafelyTry.Action(() => SaveScreenshotForEachTab(dir, "-Post"));
+      SafelyTry.Action(() => SaveScreenshotForEachTab(CleanPath($"{test.Name}-Post")));
     }
+
+    SafelyTry.Dispose(() => seleniumScope);
   }
 
-  private void SaveScreenshotForEachTab(string directory, string suffix)
+  private void SaveScreenshotForEachTab(string fileName)
   {
     if (driver == null)
       return;
 
-    var fileName = CleanPath($"{TestContext.CurrentContext.Test.FullName}{suffix}.png");
-    var path = $"{directory}\\{fileName}";
+    var path = $"{driver.Runtime.ScreenshotDirectory}\\{fileName}";
     driver.SaveScreenshotForEachTab(path);
 
     if (!string.IsNullOrEmpty(path))

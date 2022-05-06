@@ -24,7 +24,7 @@ public class WebDriverFactory
   /// <summary>
   ///   Creates a web driver
   /// </summary>
-  public IWebDriver Create(RuntimeConfig runtime)
+  public IWebDriver Create(WebDriverRuntime webDriverRuntime)
   {
     var results = scanner.GetScannableAssemblies();
     var type = results.Types.FirstOrDefault(
@@ -45,10 +45,10 @@ public class WebDriverFactory
     var param = makeDriver.GetParameters();
     if (param.Length != 2 || 
         !typeof(WebDriverConfig).IsAssignableFrom(param[0].ParameterType) ||
-        !typeof(RuntimeConfig).IsAssignableFrom(param[1].ParameterType))
+        !typeof(WebDriverRuntime).IsAssignableFrom(param[1].ParameterType))
       throw new InvalidOperationException(
         $"Expected parameter type of `WebDriverConfig` for `Driver` on `{configuration.Browser.DriverFactory}`");
 
-    return (IWebDriver)makeDriver.Invoke(null, new object?[] { configuration, runtime })!;
+    return (IWebDriver)makeDriver.Invoke(null, new object?[] { configuration, webDriverRuntime })!;
   }
 }

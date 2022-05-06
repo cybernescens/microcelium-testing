@@ -8,7 +8,6 @@ using OpenQA.Selenium;
 
 namespace Microcelium.Testing.Selenium;
 
-[Parallelizable(ParallelScope.Fixtures)]
 [RequireGenericHost]
 internal class CreatingAWebDriverWithAnInitializationStep : IRequireLogging
 {
@@ -17,12 +16,12 @@ internal class CreatingAWebDriverWithAnInitializationStep : IRequireLogging
   /// <summary>
   /// The WebDriverConfig.Browser.DriverFactory only needs a public static
   /// method named &quot;Driver&quot; that takes two arguments: the <paramref name="config"/>
-  /// and <paramref name="runtime"/> and returns a concrete <see cref="IWebDriver"/>
+  /// and <paramref name="webDriverRuntime"/> and returns a concrete <see cref="IWebDriver"/>
   /// </summary>
   /// <param name="config">the static <see cref="WebDriverConfig"/></param>
-  /// <param name="runtime">the more dynamic <see cref="RuntimeConfig"/></param>
+  /// <param name="webDriverRuntime">the more dynamic <see cref="WebDriverRuntime"/></param>
   /// <returns></returns>
-  public static IWebDriver Driver(WebDriverConfig config, RuntimeConfig runtime)
+  public static IWebDriver Driver(WebDriverConfig config, WebDriverRuntime webDriverRuntime)
   {
     fakeWebDriver = Substitute.For<IWebDriver>();
     return fakeWebDriver;
@@ -41,7 +40,7 @@ internal class CreatingAWebDriverWithAnInitializationStep : IRequireLogging
     var wdf = new WebDriverFactory(configuration);
     var log = LoggerFactory.CreateLogger<CreatingAWebDriverWithAnInitializationStep>();
 
-    using (var driver = wdf.Create(new RuntimeConfig()))
+    using (var driver = wdf.Create(new WebDriverRuntime()))
     {
       log.LogDebug("Created WebDriver {FakeDriver}", driver.GetType().FullName);
     }

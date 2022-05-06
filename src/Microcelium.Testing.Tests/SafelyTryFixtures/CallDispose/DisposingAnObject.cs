@@ -7,7 +7,6 @@ using NUnit.Framework;
 
 namespace Microcelium.Testing.SafelyTryFixtures.CallDispose;
 
-[Parallelizable(ParallelScope.None)]
 [RequireGenericHost]
 internal class DisposingAnObject : IRequireLogValidation, IRequireLogging
 {

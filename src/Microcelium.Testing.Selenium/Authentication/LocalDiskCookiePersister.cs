@@ -22,6 +22,7 @@ public class LocalDiskCookiePersister : ICookiePersister
 
   private readonly LocalDiskCookiePersisterConfig config;
   private readonly ILogger<LocalDiskCookiePersister> log;
+  private readonly JsonSerializerOptions options;
 
   private string RootDirectory => Environment.ExpandEnvironmentVariables(config.DirectoryPath);
   private string CurrentDirectory => DateTime.Today.ToString(config.CurrentDirectoryDateFormat);
@@ -32,6 +33,9 @@ public class LocalDiskCookiePersister : ICookiePersister
   {
     this.config = config;
     this.log = lf.CreateLogger<LocalDiskCookiePersister>();
+    this.options = new JsonSerializerOptions(JsonSerializerDefaults.Web) {
+      DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull
+    };
   }
 
   private void EnsureDirectory()
@@ -95,7 +99,7 @@ public class LocalDiskCookiePersister : ICookiePersister
           var name = NewFilename();
           var path = Path.Combine(TargetDirectory, name);
           await using var stream = new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.None, 4096, true);
-          await JsonSerializer.SerializeAsync(stream, cookie);
+          await JsonSerializer.SerializeAsync(stream, cookie, options);
           stream.Close();
         }
         
@@ -151,11 +155,20 @@ public class LocalDiskCookiePersister : ICookiePersister
     foreach (var path in Directory.EnumerateFiles(TargetDirectory).Where(x => !x.Equals(InitializationFile, StringComparison.CurrentCulture)))
     {
       await using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.None, 4096, true);
-      var cookie = await JsonSerializer.DeserializeAsync<Cookie>(stream);
+      var cookie = await JsonSerializer.DeserializeAsync<Cookie>(stream, options);
       container.Add(cookie!);
     }
 
     return container;
+  }
+
+  public Task Reset()
+  {
+    var root = Environment.ExpandEnvironmentVariables(config.DirectoryPath);
+    if (Directory.Exists(root))
+      Directory.Delete(root, true);
+
+    return Task.CompletedTask;
   }
 
   public bool Initialized => File.Exists(InitializationFile);

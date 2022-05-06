@@ -20,11 +20,6 @@ public sealed class RequireGenericHostAttribute : RequireHostAttribute
 
   protected override void OnAfterCreateHost(ITest test)
   {
-    Fixture.Host = host!;
-  }
-
-  protected override void ApplyToContext()
-  {
-    AddToContext(nameof(IRequireHost), Fixture.Host);
+    Fixture.Host = this.Host!;
   }
 }

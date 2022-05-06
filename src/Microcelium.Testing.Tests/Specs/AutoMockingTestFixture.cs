@@ -5,10 +5,9 @@ using NUnit.Framework;
 
 namespace Microcelium.Testing.Specs;
 
-[RequireGenericHost]
 [Parallelizable(ParallelScope.Children)]
-[FixtureLifeCycle(LifeCycle.InstancePerTestCase)]
 [TestFixture(typeof(WindsorAutoMockingContainer))]
+[Spec]
 internal class AutoMockingTestFixture<TAutoMocker> : 
   AutoMockSpecFor<FakeTestSubject, (int i, string s), TAutoMocker> 
   where TAutoMocker : IAutoMocker, new()
@@ -17,7 +16,7 @@ internal class AutoMockingTestFixture<TAutoMocker> :
   {
     ResolveDependency<IFakeDependency>().CreateInteger().Returns(5);
     RegisterDependency<IImplementedDependency, ImplementedDependency>();
-    return base.Arrange(createSubject);
+    return createSubject();
   }
 
   protected override (int i, string s) Act(FakeTestSubject subject) => subject.GetResult();
@@ -45,8 +44,6 @@ public class FakeTestSubject
 
 public class ImplementedDependency : IImplementedDependency
 {
-  //public ImplementedDependency() { }
-
   public string CreateString() => "Hello world";
 }
 

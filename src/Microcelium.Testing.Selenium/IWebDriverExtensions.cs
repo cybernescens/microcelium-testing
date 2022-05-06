@@ -16,13 +16,17 @@ public interface IWebDriverExtensions : IWebDriver
 
   /// <summary>
   /// </summary>
+  WebDriverRuntime Runtime { get; }
+
+  /// <summary>
+  /// </summary>
   ILoggerFactory LoggerFactory { get; }
 
   /// <summary>
   /// </summary>
-  /// <param name="filePath"></param>
+  /// <param name="fileName"></param>
   /// <returns></returns>
-  string SaveScreenshotForEachTab(string filePath);
+  string SaveScreenshotForEachTab(string fileName);
 
   /// <summary>
   /// </summary>
@@ -70,12 +74,9 @@ public interface IWebDriverExtensions : IWebDriver
 
   /// <summary>
   /// </summary>
-  /// <param name="directory"></param>
   /// <param name="fileMask"></param>
   /// <returns></returns>
-  FileInfo? WaitForFileDownload(
-    string directory,
-    string fileMask);
+  FileInfo? WaitForFileDownload(string fileMask);
 
   /// <summary>
   /// </summary>

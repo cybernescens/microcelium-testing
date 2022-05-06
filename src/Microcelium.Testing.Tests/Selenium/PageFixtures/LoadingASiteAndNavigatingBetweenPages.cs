@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using FluentAssertions;
 using Microcelium.Testing.Selenium.Pages;
 using Microcelium.Testing.Web;
@@ -11,23 +10,20 @@ using OpenQA.Selenium;
 
 namespace Microcelium.Testing.Selenium.PageFixtures;
 
-[Parallelizable(ParallelScope.Fixtures)]
-[RequireScreenshotsDirectory]
 [RequireWebEndpoint]
 [RequireSelenium]
 internal class LoadingASiteAndNavigatingBetweenPages :
-  IConfigureSeleniumWebDriverConfig,
+  IConfigureWebDriverConfig,
   IRequireWebHostOverride,
   IRequireScreenshots,
   IRequireWebSite<LoadingASiteAndNavigatingBetweenPages.Page1>
 {
   public IHost Host { get; set; }
   public IWebDriverExtensions Driver { get; set; }
+  public Uri HostUri { get; set; }
+  public Landing<Page1> Site { get; set; }
 
   public void Configure(WebDriverConfig config) { config.BaseUri = HostUri.ToString(); }
-
-  public string ScreenshotDirectory { get; set; }
-  public Uri HostUri { get; set; }
 
   public void Configure(WebApplication endpoint)
   {
@@ -48,12 +44,18 @@ internal class LoadingASiteAndNavigatingBetweenPages :
       });
   }
 
-  public Landing<Page1> Site { get; set; }
+  [Test, Order(0)]
+  public void Page1_Is_Link_To_Page2()
+  {
+    Site.Home.Page2Link.Should().BeEquivalentTo(new { Text = "Page 2", TagName = "a" });
+    Site.Home.ClickLinkToPage2().Should().BeOfType<Page2>();
+  }
 
-  [Test]
-  public void NavigateToPage1ThenPage2AndClickTheRadioButtonUsingGenerics() =>
-    Site.Home
-      .ClickLinkToPage2()
+  [Test, Order(1)]
+  public void NavigateToPage1ThenPage2AndClickTheRadioButtonUsingType()
+  {
+    Site.CurrentPage.Should().BeOfType<Page2>();
+    ((Page2)Site.CurrentPage)
       .RadioButton
       .Click()
       .Should()
@@ -62,26 +64,14 @@ internal class LoadingASiteAndNavigatingBetweenPages :
           LabelText = "Foo",
           IsSelected = true
         });
-
-  [Test]
-  public void NavigateToPage1ThenPage2AndClickTheRadioButtonUsingType() =>
-    Site.Home
-      .ClickLinkToPage2TheHardWay()
-      .RadioButton
-      .Click()
-      .Should()
-      .BeEquivalentTo(
-        new {
-          LabelText = "Foo",
-          IsSelected = true
-        });
+  }
 
   [RelativePath("/page1")]
   internal class Page1 : Page<Page1>
   {
     public Page1(IWebDriverExtensions driver) : base(driver) { }
 
-    protected IWebElement Page2Link => FindChild("a");
+    public IWebElement Page2Link => FindChild("a");
 
     public Page2 ClickLinkToPage2()
     {
