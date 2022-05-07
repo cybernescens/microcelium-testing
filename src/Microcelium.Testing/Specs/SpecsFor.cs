@@ -32,7 +32,24 @@ public abstract class SpecsFor<TSut, TResult> : IRequireHost
   /// </summary>
   /// <param name="createSubject"></param>
   /// <returns></returns>
-  protected virtual TSut Arrange(Func<TSut> createSubject) => createSubject();
+  protected virtual TSut Arrange(/*Func<TSut> createSubject*/)
+  {
+    ArrangeBeforeCreate();
+    var subject = CreateSubject();
+    ArrangeAfterCreate(subject);
+    return subject;
+  }
+
+  /// <summary>
+  /// Arrange called prior to <see cref="CreateSubject"/>
+  /// </summary>
+  protected virtual void ArrangeBeforeCreate() { }
+
+  /// <summary>
+  /// Arrange called after <see cref="CreateSubject"/>
+  /// </summary>
+  /// <param name="subject">the subject or System Under Test</param>
+  protected virtual void ArrangeAfterCreate(TSut subject) { }
 
   /// <summary>
   ///   After <see cref="Arrange" />, this is where we perform the action we are testing against our <see cref="Subject" />
@@ -49,7 +66,7 @@ public abstract class SpecsFor<TSut, TResult> : IRequireHost
   // ReSharper disable once UnusedMember.Global
   internal void Run()
   {
-    Subject = Arrange(CreateSubject);
+    Subject = Arrange();
     Result = Act(Subject);
   }
 

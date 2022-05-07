@@ -33,7 +33,24 @@ public abstract class AsyncSpecsFor<TSut, TResult> : IRequireHost
   /// </summary>
   /// <param name="createSubject"></param>
   /// <returns></returns>
-  protected virtual async Task<TSut> Arrange(Func<Task<TSut>> createSubject) => await createSubject();
+  protected virtual async Task<TSut> Arrange(/*Func<Task<TSut>> createSubject*/)
+  {
+    await ArrangeBeforeCreate();
+    var subject = await CreateSubject();
+    await ArrangeAfterCreate(subject);
+    return subject;
+  }
+
+  /// <summary>
+  /// Arrange called prior to <see cref="CreateSubject"/>
+  /// </summary>
+  protected virtual Task ArrangeBeforeCreate() => Task.CompletedTask;
+
+  /// <summary>
+  /// Arrange called after <see cref="CreateSubject"/>
+  /// </summary>
+  /// <param name="subject">the subject or System Under Test</param>
+  protected virtual Task ArrangeAfterCreate(TSut subject) => Task.CompletedTask;
 
   /// <summary>
   ///   After <see cref="SpecsFor{TSut,TResult}.Arrange" />, this is where
@@ -51,7 +68,7 @@ public abstract class AsyncSpecsFor<TSut, TResult> : IRequireHost
   // ReSharper disable once UnusedMember.Global
   internal async Task Run()
   {
-    Subject = await Arrange(CreateSubject);
+    Subject = await Arrange();
     Result = await Act(Subject);
   }
 

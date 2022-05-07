@@ -1,22 +1,19 @@
-﻿using System;
-using FluentAssertions;
+﻿using FluentAssertions;
 using NSubstitute;
 using NUnit.Framework;
 
 namespace Microcelium.Testing.Specs;
 
-[Parallelizable(ParallelScope.Children)]
 [TestFixture(typeof(WindsorAutoMockingContainer))]
 [Spec]
 internal class AutoMockingTestFixture<TAutoMocker> : 
   AutoMockSpecFor<FakeTestSubject, (int i, string s), TAutoMocker> 
   where TAutoMocker : IAutoMocker, new()
 {
-  protected override FakeTestSubject Arrange(Func<FakeTestSubject> createSubject)
+  protected override void ArrangeBeforeCreate()
   {
     ResolveDependency<IFakeDependency>().CreateInteger().Returns(5);
     RegisterDependency<IImplementedDependency, ImplementedDependency>();
-    return createSubject();
   }
 
   protected override (int i, string s) Act(FakeTestSubject subject) => subject.GetResult();

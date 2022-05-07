@@ -5,7 +5,6 @@ using NUnit.Framework;
 namespace Microcelium.Testing.Specs.NunitSpecAttributeFixtures;
 
 [Spec]
-[Parallelizable(ParallelScope.Children)]
 internal class NunitSpecAttributeRunsTheTestOfAnInheritedSpecsBaseClass : DerivedSpecsFor<int, int>
 {
   protected override int CreateSubject() => 15;
@@ -17,7 +16,6 @@ internal class NunitSpecAttributeRunsTheTestOfAnInheritedSpecsBaseClass : Derive
 }
 
 [Spec]
-[Parallelizable(ParallelScope.Children)]
 internal class NunitSpecAttributeRunsTheTestOfAnInheritedAsyncSpecsBaseClass : DerivedAsyncSpecsFor<int, int>
 {
   protected override Task<int> CreateSubject() => Task.FromResult(15);
