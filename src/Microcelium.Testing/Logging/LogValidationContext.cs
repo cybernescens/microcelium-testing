@@ -43,20 +43,66 @@ public class LogValidationContext : IDisposable
     return this;
   }
 
+  /// <summary>
+  /// Finds all matching log messages
+  /// </summary>
+  /// <param name="expectation">the <see cref="LogMessage"/> expectation</param>
+  /// <param name="comparer">the <see cref="LogMessageComparer"/></param>
+  /// <returns>all matching <see cref="LogMessage"/>s</returns>
+  [MethodImpl(MethodImplOptions.NoInlining)]
+  public IEnumerable<LogMessage> FindMatchingLogMessages(
+    LogMessage expectation,
+    LogMessageComparer comparer = default) =>
+    buffer.GetMessages().Where(x => comparer.Equals(x, expectation));
+
+  /// <summary>
+  /// Finds all matching log messages by building a <see cref="LogMessage"/> expectation
+  /// </summary>
+  /// <param name="message">the message text</param>
+  /// <param name="level">the <see cref="LogLevel"/></param>
+  /// <param name="mode">the <see cref="MatchMode"/> for evaluating the <see cref="LogMessage.LoggedMessage"/></param>
+  /// <param name="exception">the <see cref="Exception"/> when matching against <see cref="LogMessage.Exception"/></param>
+  /// <returns>all matching <see cref="LogMessage"/>s</returns>
+  [MethodImpl(MethodImplOptions.NoInlining)]
+  public IEnumerable<LogMessage> FindMatchingLogMessages(
+    string message,
+    LogLevel level = LogLevel.Information,
+    MatchMode mode = MatchMode.Contains,
+    Exception? exception = null)
+  {
+    var (comparer, _) = Predicate(mode);
+    return FindMatchingLogMessages(new LogMessage(level, message, exception), comparer);
+  }
+
+  /// <summary>
+  /// Asserts the logger received the expected <see cref="LogMessage"/>
+  /// </summary>
+  /// <param name="expectation">the <see cref="LogMessage"/> expectation</param>
+  /// <param name="comparer">the <see cref="LogMessageComparer"/></param>
+  /// <param name="errorMsg">the error message set with the assertion failure</param>
+  /// <returns>a reference to itself or an <see cref="LogMessageAssertionFailedException"/></returns>
+  /// <exception cref="LogMessageAssertionFailedException"></exception>
   [MethodImpl(MethodImplOptions.NoInlining)]
   public LogValidationContext ReceivedExpectation(
-    Func<LogMessage> expectationBuilder,
-    LogMessageComparer comparer,
+    LogMessage expectation,
+    LogMessageComparer comparer = default,
     string errorMsg = "Did not find a log message matching")
   {
     var messages = buffer.GetMessages();
-    var expectation = expectationBuilder();
     if (messages.Any(x => comparer.Equals(x, expectation)))
       return this;
 
     throw new LogMessageAssertionFailedException(errorMsg, expectation, messages, ReplayCutoff);
   }
 
+  /// <summary>
+  /// Builds a <see cref="LogMessage"/> expectation and asserts the logger received it
+  /// </summary>
+  /// <param name="message">the message text</param>
+  /// <param name="level">the <see cref="LogLevel"/></param>
+  /// <param name="mode">the <see cref="MatchMode"/> for evaluating the <see cref="LogMessage.LoggedMessage"/></param>
+  /// <param name="exception">the <see cref="Exception"/> when matching against <see cref="LogMessage.Exception"/></param>
+  /// <returns>a reference to itself or an <see cref="LogMessageAssertionFailedException"/></returns>
   [MethodImpl(MethodImplOptions.NoInlining)]
   public LogValidationContext Received(
     string message,
@@ -64,31 +110,19 @@ public class LogValidationContext : IDisposable
     MatchMode mode = MatchMode.Contains,
     Exception? exception = null)
   {
-    (LogMessageComparer Func, string Msg) Predicate()
-    {
-      return mode switch {
-        MatchMode.Contains => (
-          new LogMessageComparer((x, y) => x.ToLower().Contains(y.ToLower())),
-          "Did not find a message containing"),
-        MatchMode.Start => (
-          new LogMessageComparer((x, y) => x.StartsWith(y, StringComparison.CurrentCultureIgnoreCase)),
-          "Did not find a message starting with"),
-        MatchMode.End => (
-          new LogMessageComparer((x, y) => x.EndsWith(y, StringComparison.CurrentCultureIgnoreCase)),
-          "Did not find a message ending with"),
-        MatchMode.Regex => (
-          new LogMessageComparer((x, _) => new Regex(message, RegexOptions.IgnoreCase).IsMatch(x)),
-          $"Did not find a message matching pattern '{message}'"),
-        _ => (
-          new LogMessageComparer((x, y) => x.Equals(y, StringComparison.CurrentCultureIgnoreCase)),
-          "Did not find a message matching")
-      };
-    }
-
-    var predicate = Predicate();
-    ReceivedExpectation(() => new LogMessage(level, message, exception), predicate.Func, predicate.Msg);
+    var (comparer, errorMsg) = Predicate(mode);
+    ReceivedExpectation(new LogMessage(level, message, exception), comparer, errorMsg);
     return this;
   }
+
+  private static (LogMessageComparer Func, string Msg) Predicate(MatchMode mm) =>
+    mm switch {
+      MatchMode.Contains => (LogMessageComparer.Contains, "Did not find a message containing"),
+      MatchMode.Start => (LogMessageComparer.Start, "Did not find a message starting with"),
+      MatchMode.End => (LogMessageComparer.End, "Did not find a message ending with"),
+      MatchMode.Regex => (LogMessageComparer.Regex, "Did not find a message matching pattern"),
+      _ => (LogMessageComparer.Default, "Did not find a message matching")
+    };
 
   /// <inheritdoc />
   public void Dispose()

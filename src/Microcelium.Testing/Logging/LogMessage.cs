@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Text.RegularExpressions;
 using Microsoft.Extensions.Logging;
 
 namespace Microcelium.Testing.Logging;
@@ -38,11 +39,20 @@ public readonly struct LogMessage
   }
 }
 
-public sealed class LogMessageComparer : IEqualityComparer<LogMessage>
+public readonly struct LogMessageComparer : IEqualityComparer<LogMessage>
 {
-  public static LogMessageComparer Default = new((x, y) => string.Equals(x, y, StringComparison.CurrentCultureIgnoreCase));
-  
+  public static readonly LogMessageComparer Default = new();
+  public static readonly LogMessageComparer Contains = new((x, y) => x.Contains(y, StringComparison.CurrentCultureIgnoreCase));
+  public static readonly LogMessageComparer Start = new((x, y) => x.StartsWith(y, StringComparison.CurrentCultureIgnoreCase));
+  public static readonly LogMessageComparer End = new((x, y) => x.EndsWith(y, StringComparison.CurrentCultureIgnoreCase));
+  public static readonly LogMessageComparer Regex = new((x, y) => new Regex(y, RegexOptions.IgnoreCase).IsMatch(x));
+
   private readonly Func<string, string, bool> messageComparer;
+
+  public LogMessageComparer()
+  {
+    this.messageComparer = (x, y) => string.Equals(x, y, StringComparison.CurrentCultureIgnoreCase);
+  }
 
   public LogMessageComparer(Func<string, string, bool> messageComparer)
   {
@@ -55,15 +65,12 @@ public sealed class LogMessageComparer : IEqualityComparer<LogMessage>
     messageComparer(x.LoggedMessage, y.LoggedMessage) &&
     Equals(x.Exception, y.Exception);
 
-  public int GetHashCode(LogMessage obj)
-  {
-    var hashCode = new HashCode();
-    hashCode.Add((int)obj.Level);
-    hashCode.Add(obj.LoggedMessage, StringComparer.CurrentCultureIgnoreCase);
-    hashCode.Add(obj.Exception);
-    return hashCode.ToHashCode();
-  }
-
+  public int GetHashCode(LogMessage obj) =>
+    HashCode.Combine(
+      obj.Level,
+      obj.LoggedMessage.GetHashCode(StringComparison.CurrentCultureIgnoreCase),
+      obj.Exception);
+  
   private static bool Equals(Exception? x, Exception? y)
   {
     if (ReferenceEquals(x, y))

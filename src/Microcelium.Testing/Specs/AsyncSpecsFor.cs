@@ -66,7 +66,7 @@ public abstract class AsyncSpecsFor<TSut, TResult> : IRequireHost
 
   /* member is invoked from Microcelium.Testing.NUnit.Specs.SpecAttribute for example */
   // ReSharper disable once UnusedMember.Global
-  internal async Task Run()
+  protected virtual async Task Run()
   {
     Subject = await Arrange();
     Result = await Act(Subject);

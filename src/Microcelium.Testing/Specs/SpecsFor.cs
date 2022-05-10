@@ -64,7 +64,7 @@ public abstract class SpecsFor<TSut, TResult> : IRequireHost
 
   /* member is invoked from Microcelium.Testing.NUnit.Specs.SpecAttribute for example */
   // ReSharper disable once UnusedMember.Global
-  internal void Run()
+  protected virtual void Run()
   {
     Subject = Arrange();
     Result = Act(Subject);

@@ -30,7 +30,7 @@ public class SpecAttribute : TestActionAttribute
     if (IsSubclassOfGeneric(AsyncSpecsType, fixtureType))
     {
       var task = (Task)fixtureType.GetMethod("Run", BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(test.Fixture, Array.Empty<object>())!;
-      task.GetAwaiter().GetResult();
+      task.ConfigureAwait(false).GetAwaiter().GetResult();
       return;
     }
 
