@@ -1,13 +1,8 @@
-# Starter pipeline
-# Start with a minimal pipeline that you can customize to build and deploy your code.
-# Add steps that build, run tests, deploy, and more:
-# https://aka.ms/yaml
-
 trigger:
 - master
 
 pool:
-  vmImage: 'windows-2022'
+  vmImage: windows-2022
 
 variables:
   Release: 1
@@ -17,18 +12,33 @@ variables:
 steps:
 - checkout: self
   persistCredentials: true
+
 - task: NuGetAuthenticate@0
+
 # - task: Cache@2
 #   inputs:
 #     key: fake
 #     path: $(Build.Repository.LocalPath)/.fake
 #     restoreKeys: fake
 - bash: export Version="$(VersionPrefix).$(VersionSuffix)" && ./build.sh
+
+- task: PublishTestResults@2 
+  inputs:
+    testResultsFormat: VSTest
+    testResultsFiles: '**/*.trx'
+    searchFolder: $(Common.TestResultsDirectory)
+
+- task: PublishCodeCoverageResults@2
+  inputs:
+    codeCoverageTool: Cobertura
+    summaryFileLocation: '$(Common.TestResultsDirectory)/*.cobertura.xml'
+
+- bash: git tag $(Build.SourceBranchName)-$(Build.BuildNumber) && git push origin $(Build.SourceBranchName)-$(Build.BuildNumber)
+  workingDirectory: $(Build.SourcesDirectory)    
+
 - task: NuGetCommand@2
   inputs:
     command: 'push'
     packagesToPush: '$(Build.BinariesDirectory)/**/*.nupkg'
     nuGetFeedType: 'internal'
     publishVstsFeed: 'a3336200-6a09-4f84-bc50-005bbda90364/a3b10c97-911e-4567-8b1e-4bb97c7701b4'
-- bash: git tag $(Build.SourceBranchName)-$(Build.BuildNumber) && git push origin $(Build.SourceBranchName)-$(Build.BuildNumber)
-  workingDirectory: $(Build.SourcesDirectory)    

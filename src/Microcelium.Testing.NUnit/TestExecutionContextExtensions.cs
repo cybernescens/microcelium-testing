@@ -2,7 +2,7 @@
 using NUnit.Framework.Interfaces;
 using NUnit.Framework.Internal;
 
-namespace Microcelium.Testing.NUnit;
+namespace Microcelium.Testing;
 
 /// <summary>
 ///   Extension methods for the <see cref="TestExecutionContext" />

@@ -50,3 +50,4 @@ selenium-bin
 !build.fsx.lock
 **/bak/*
 /build.fsx.lock
+test-results

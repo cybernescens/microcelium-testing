@@ -1,7 +1,7 @@
 ﻿using Microsoft.Extensions.Logging;
 using NUnit.Framework;
 
-namespace Microcelium.Testing.NUnit;
+namespace Microcelium.Testing;
 
 public class NUnitParameterPropertyResolver
 {

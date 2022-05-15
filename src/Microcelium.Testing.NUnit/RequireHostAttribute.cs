@@ -171,15 +171,11 @@ public abstract class RequireHostAttribute : TestActionAttribute
 
   protected virtual void DefaultLogConfiguration(HostBuilderContext ctx, ILoggingBuilder logging)
   {
-    var section = ctx.Configuration.GetSection("Logging");
-    if (section != null)
-      logging.AddConfiguration(section);
-
     logging.AddSimpleConsole(
       opt => {
         opt.IncludeScopes = true;
         opt.TimestampFormat = "HH:mm:ss ";
-        opt.SingleLine = true;
+        opt.SingleLine = false;
         opt.ColorBehavior = Microsoft.Extensions.Logging.Console.LoggerColorBehavior.Enabled;
       });
 
@@ -190,6 +186,10 @@ public abstract class RequireHostAttribute : TestActionAttribute
     logging.AddFilter("NHibernate", LogLevel.Warning);
     logging.AddFilter("Microsoft", LogLevel.Warning);
     logging.AddFilter("System", LogLevel.Warning);
+
+    var section = ctx.Configuration.GetSection("Logging");
+    if (section != null)
+      logging.AddConfiguration(section);
   }
 
   protected virtual void DefaultServicesConfiguration(HostBuilderContext ctx, IServiceCollection services) { }

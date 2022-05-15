@@ -57,10 +57,13 @@ Target.create "Build" (fun _ ->
      }) (srcDir)
 )
 
+Target.create "Test" (fun _ -> 
+  Testing.runUnitTests (Testing.UnitTestProjects srcDir) |> ignore
+)
+
 Target.create "PrepareSelenium" <| Targets.prepareSelenium binDir shotsDir
 Target.create "Clean" <| Targets.clean srcDir binDir
 Target.create "Version" <| Targets.version version
-Target.create "Test" <| Targets.test tests project binDir
 Target.create "Publish" <| Targets.publish binDir
 
 (* about the only part that needs customized *)
