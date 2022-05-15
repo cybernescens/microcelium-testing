@@ -20,7 +20,11 @@ steps:
 #     key: fake
 #     path: $(Build.Repository.LocalPath)/.fake
 #     restoreKeys: fake
+
 - bash: export Version="$(VersionPrefix).$(VersionSuffix)" && ./build.sh
+  env:
+    CoverletExclude: '[*.Tests]*,[*.SeleniumTests]*,[DataDx.Testing*]*'
+    
 
 - task: PublishTestResults@2 
   inputs:

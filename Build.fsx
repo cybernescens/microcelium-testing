@@ -27,12 +27,24 @@ let versionparts = Version.parts version
 let versionstr = Version.toString version
 
 let binDir = Environment.defaultBinDir
-let srcDir = Path.getFullName "./src"
-let shotsDir = Path.getFullName "./screenshots"
-let selenDir = Path.getFullName "./selenium"
+let srcDir = Path.getFullName "./src" |> Path.normalizeFileName
+let testResultsDir = Path.getFullName "./test-results" |> Path.normalizeFileName
+let shotsDir = Path.getFullName "./screenshots" |> Path.normalizeFileName
 
-let project = "Microcelium.Testing"
-let tests = seq { yield (srcDir, Default) }
+
+Target.create "Clean" (fun _ ->
+  [binDir; testResultsDir] |> List.iter (fun x -> 
+    Directory.ensure x
+    Shell.cleanDir x
+  )
+
+  GlobbingPattern.createFrom srcDir
+  ++ "**/bin"
+  ++ "**/obj"
+  -- "**/node_modules/**"
+  -- "**/node_modules"
+  |> Shell.cleanDirs
+)
 
 (* override the default Build because it adds adapters that we don't want
     for this specific build, e.g. we're building projects to help with 
@@ -62,7 +74,6 @@ Target.create "Test" (fun _ ->
 )
 
 Target.create "PrepareSelenium" <| Targets.prepareSelenium binDir shotsDir
-Target.create "Clean" <| Targets.clean srcDir binDir
 Target.create "Version" <| Targets.version version
 Target.create "Publish" <| Targets.publish binDir
 
