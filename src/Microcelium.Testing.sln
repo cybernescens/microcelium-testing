@@ -44,9 +44,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microcelium.Testing.NUnit.W
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microcelium.Testing.Data.NHibernate", "Microcelium.Testing.Data.NHibernate\Microcelium.Testing.Data.NHibernate.csproj", "{596E2440-88AB-4794-92D4-0AB7545A09B0}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microcelium.Testing.Data.EntityFramework", "Microcelium.Testing.Data.EntityFramework\Microcelium.Testing.Data.EntityFramework.csproj", "{8E150BB6-17DE-4D68-AEA9-A1C1963AFCFE}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microcelium.Testing.Data.EntityFramework", "Microcelium.Testing.Data.EntityFramework\Microcelium.Testing.Data.EntityFramework.csproj", "{8E150BB6-17DE-4D68-AEA9-A1C1963AFCFE}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microcelium.Testing.NUnit.EntityFramework", "Microcelium.Testing.NUnit.EntityFramework\Microcelium.Testing.NUnit.EntityFramework.csproj", "{7EF2B536-547E-43DD-860C-551F08C3E35D}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microcelium.Testing.NUnit.EntityFramework", "Microcelium.Testing.NUnit.EntityFramework\Microcelium.Testing.NUnit.EntityFramework.csproj", "{7EF2B536-547E-43DD-860C-551F08C3E35D}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
