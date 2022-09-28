@@ -1,4 +1,7 @@
 #r "paket:
+nuget BlackFox.Fake.BuildTask
+nuget BlackFox.CommandLine
+nuget NuGet.CommandLine
 nuget Fake.BuildServer.TeamFoundation
 nuget Fake.Core.Target
 nuget Fake.DotNet.Cli
@@ -8,7 +11,14 @@ nuget Fake.IO.Zip
 nuget Fake.Runtime
 //"
 #load ".microcelium/lib/microcelium.fsx"
+
+#if !FAKE
 #load ".fake/build.fsx/intellisense.fsx"
+#r "netstandard"
+#endif
+
+open BlackFox.CommandLine
+open BlackFox.Fake
 open Fake.Core
 open Fake.BuildServer
 open Fake.DotNet
@@ -20,21 +30,76 @@ open Microcelium.Fake
 
 BuildServer.install [ TeamFoundation.Installer ]
 
-CoreTracing.ensureConsoleListener ()
+if BuildServer.buildServer = LocalBuild then
+  CoreTracing.ensureConsoleListener ()
 
 let version = Version.fromEnvironment ()
-let versionparts = Version.parts version
 let versionstr = Version.toString version
 
 let binDir = Environment.defaultBinDir
+let testResultsDir = Environment.defaultTestResultsDir
+
 let srcDir = Path.getFullName "./src" |> Path.normalizeFileName
-let testResultsDir = Path.getFullName "./test-results" |> Path.normalizeFileName
-let shotsDir = Path.getFullName "./screenshots" |> Path.normalizeFileName
+let shotsDir = testResultsDir @@ "screenshots" |> Path.normalizeFileName
 
+let slnFile = Path.combine srcDir "Microcelium.Testing.sln"
 
-Target.create "Clean" (fun _ ->
+let projects = 
+  GlobbingPattern.createFrom srcDir
+  ++ "*/Microcelium.Testing.*.csproj"
+  -- "*/*.Tests.*"
+  |> Seq.toList
+
+let getSuffix (v: Version.Entry) =
+  match v.suffix with
+  | "" -> None 
+  | null -> None
+  | _ -> Some v.suffix
+
+let props = 
+  [("VersionPrefix", version.prefix)
+   ("VersionSuffix", version.suffix)
+   ("Version", Version.toString version)]
+
+let optBuildDefault (p: DotNet.BuildOptions) =
+  { p with
+      Configuration = DotNet.BuildConfiguration.Debug
+      MSBuildParams =  
+      { p.MSBuildParams with 
+          NoWarn = Build.msbNowarn
+          Properties = p.MSBuildParams.Properties @ props 
+          NoConsoleLogger = false } }
+
+let optPackDefault (p: DotNet.PackOptions) = 
+  { p with
+      Configuration = DotNet.BuildConfiguration.Debug
+      OutputPath = Some binDir
+      VersionSuffix = getSuffix version
+      MSBuildParams =
+        { p.MSBuildParams with
+            NoWarn = Build.msbNowarn
+            Properties = p.MSBuildParams.Properties @ props
+            NodeReuse = false
+            DisableInternalBinLog = true
+            NoConsoleLogger = false
+        }
+  }
+
+let PrepareSelenium = BuildTask.create "PrepareSelenium" [] {
+  if BuildServer.buildServer <> LocalBuild then
+    Process.killAllByName "chrome"
+    Process.killAllByName "chrome.exe"
+
+  Process.killAllByName "chromedriver"
+  let dirs = !! binDir ++ shotsDir
+  dirs |> Seq.iter Directory.ensure
+  dirs |> Shell.cleanDirs
+}
+
+let Clean = BuildTask.create "Clean" [PrepareSelenium] {
   [binDir; testResultsDir] |> List.iter (fun x -> 
-    Directory.ensure x
+    printfn "cleaning `%s`" x
+    Directory.create x
     Shell.cleanDir x
   )
 
@@ -44,63 +109,33 @@ Target.create "Clean" (fun _ ->
   -- "**/node_modules/**"
   -- "**/node_modules"
   |> Shell.cleanDirs
-)
+}
 
-(* override the default Build because it adds adapters that we don't want
-    for this specific build, e.g. we're building projects to help with 
-    unit and selenium tests *)
-Target.create "Build" (fun _ ->
+let VersionTask = BuildTask.create "VersionTask" [Clean] {
+  Trace.logfn "versionMajorMinor: %s" version.raw
+  Trace.logfn "versionPrefix:     %s" version.prefix
+  Trace.logfn "versionSuffix:     %s" version.suffix
+  Trace.logfn "version:           %s" <| Version.toString version
+  Trace.logfn "buildServer:       %A" <| Fake.Core.BuildServer.buildServer
 
-   DotNet.build (fun p ->
-     { p with
-         Configuration = DotNet.BuildConfiguration.Debug
-         MSBuildParams = 
-           { p.MSBuildParams with 
-               NodeReuse = false
-               NoWarn = Build.msbNowarn
-               Properties = Build.msbProperties versionparts 
-               BinaryLoggers = Some []
-               FileLoggers = Some []
-               DistributedLoggers = Some []
-               Loggers = Some [] 
-               DisableInternalBinLog = true  
-               NoConsoleLogger = false
-           }
-     }) (srcDir)
-)
+  Version.toString version |> Trace.setBuildNumber
+}
 
-Target.create "Test" (fun _ -> 
+let Build = BuildTask.create "Build" [VersionTask] {
+   DotNet.build optBuildDefault slnFile
+}
+
+let Test = BuildTask.create "Test" [Build] {
   Testing.runUnitTests (Testing.UnitTestProjects srcDir) |> ignore
-)
+}
 
-Target.create "PrepareSelenium" <| Targets.prepareSelenium binDir shotsDir
-Target.create "Version" <| Targets.version version
-Target.create "Publish" <| Targets.publish binDir
+BuildTask.create "Package" [Test] {
+  projects |> Seq.iter (DotNet.pack optPackDefault)
+}
 
-(* about the only part that needs customized *)
-Target.create "Package" (fun _ -> 
-  !! (srcDir @@ "*/*.csproj")
-  -- (srcDir @@ "*/*.Tests.csproj")
-  -- (srcDir @@ "*.ignore/**")
-  |> Seq.map System.IO.Path.GetFileNameWithoutExtension
-  |> Seq.iter (fun p -> Build.packageNuget srcDir p versionparts binDir) 
-)
-
-Target.create "ToLocalNuget"  <| Targets.publishLocal binDir versionstr
-
-(* `NuGetCachePath` EnvVar should be set to your Nuget Packages Install dir already, but 
-    `TargetVersion` should be set prior to running build.bat :
-    set TargetVersion=1.14 *)
-Target.create "ToLocalPackageRepo" <| Targets.packageLocal srcDir
+Targets.publishLocal binDir versionstr |> Target.create "ToLocalNuget"
+Targets.packageLocal srcDir |> Target.create "ToLocalPackageRepo"
 
 "Build" ==> "ToLocalPackageRepo"
 
-"PrepareSelenium"
-  ==> "Clean" 
-  ==> "Version"
-  ==> "Build"
-  ==> "Test"
-  ==> "Package"
-  =?> ("Publish", Environment.runPublish)
-  
-Target.runOrDefault <| if Environment.runPublish then "Publish" else "Test"
+Target.runOrDefault <| if Environment.runPublish then "Package" else "Test"

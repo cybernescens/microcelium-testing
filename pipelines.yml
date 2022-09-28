@@ -2,24 +2,32 @@ trigger:
 - master
 
 pool:
-  vmImage: windows-2022
+  vmImage: windows-latest
 
 variables:
-  Release: 1
-  VersionPrefix: 1.1.0
-  VersionSuffix: $[counter(variables['VersionPrefix'], 0)]
+  - name: Release
+    value: 1
+  - name: VersionPrefix
+    value: 1.1.0
+  - name: VersionSuffix
+    value: $[counter(variables['VersionPrefix'], 0)]
+  - name: NUGET_PACKAGES
+    value: $(Pipeline.Workspace)/.nuget/packages
 
 steps:
 - checkout: self
   persistCredentials: true
 
+- task: UseDotNet@2
+      inputs:
+        useGlobalJson: true
+
 - task: NuGetAuthenticate@0
 
-# - task: Cache@2
-#   inputs:
-#     key: fake
-#     path: $(Build.Repository.LocalPath)/.fake
-#     restoreKeys: fake
+- task: Cache@2
+  inputs:
+    key: 'nuget | "$(Agent.OS)"'
+    path: $(NUGET_PACKAGES)
 
 - bash: export Version="$(VersionPrefix).$(VersionSuffix)" && ./build.sh
   env:
@@ -43,5 +51,4 @@ steps:
   inputs:
     command: 'push'
     packagesToPush: '$(Build.BinariesDirectory)/**/*.nupkg'
-    nuGetFeedType: 'internal'
-    publishVstsFeed: 'a3336200-6a09-4f84-bc50-005bbda90364/a3b10c97-911e-4567-8b1e-4bb97c7701b4'
+    publishVstsFeed: 'DataDx/DataDxNuget'
