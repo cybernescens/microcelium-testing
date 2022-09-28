@@ -46,7 +46,7 @@ let slnFile = Path.combine srcDir "Microcelium.Testing.sln"
 
 let projects = 
   GlobbingPattern.createFrom srcDir
-  ++ "*/Microcelium.Testing.*.csproj"
+  ++ "*/Microcelium.Testing*.csproj"
   -- "*/*.Tests.*"
   |> Seq.toList
 
