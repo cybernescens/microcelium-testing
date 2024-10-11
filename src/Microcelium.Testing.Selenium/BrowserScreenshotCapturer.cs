@@ -21,7 +21,7 @@ public class BrowserScreenshotCapturer
 
   public string? SaveScreenshotForEachTab(string filePath)
   {
-    log?.LogInformation("Saving screen shoot to path:\n{0}", filePath);
+    log?.LogInformation("Saving screen shot to path:\n{0}", filePath);
 
     try
     {

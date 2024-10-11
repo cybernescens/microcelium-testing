@@ -166,7 +166,8 @@ public class RequireSeleniumAttribute : RequireHostAttribute
       throw new InvalidOperationException(
         $"Unable to find {nameof(ICookiePersister)} implementation `{implementationTypeName}`");
       
-    var details = sub.GetValue(configurationType, kvp.Key);
+    var details = Activator.CreateInstance(configurationType);
+    sub.Bind(kvp.Key, details);
     if (details == null)
       throw new InvalidOperationException(
         $"Unable to convert `{CookiePersisterConfig.SectionName}` to target type `{configurationType.FullName}`");
@@ -218,11 +219,7 @@ public class RequireSeleniumAttribute : RequireHostAttribute
     }
   }
 
-  protected override void OnHostBuilding(IHostBuilder builder, ITest test)
-  {
-    if (test.Fixture is IConfigureSeleniumWebDriverConfig wdc)
-      wdc.Configure(config);
-  }
+  protected override void OnHostBuilding(IHostBuilder builder, ITest test) { }
 
   protected override void OnHostBuilt(ITest test)
   {
@@ -256,6 +253,9 @@ public class RequireSeleniumAttribute : RequireHostAttribute
       loggerFactory!.CreateLogger<RequireSeleniumAttribute>()
         .LogWarning($"fixture implements `{nameof(IRequireAuthentication)}` but no cookies found.");
     }
+
+    if (test.Fixture is IConfigureSeleniumWebDriverConfig wdc)
+      wdc.Configure(config);
 
     if (websiteRequired)
     {

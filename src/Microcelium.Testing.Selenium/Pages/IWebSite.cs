@@ -33,48 +33,70 @@ public abstract class WebSite : WebComponent
 
   /// <inheritdoc />
   protected override ISearchContext SearchContext => Driver;
+  
+  /// <inheritdoc />
+  public override IWebElement WebElement => Driver.FindElement(ElementIdentifier);
 
   /// <summary>
   /// Attempts to load <typeparamref name="TPage"/> WebPage into the browser
   /// </summary>
   /// <typeparam name="TPage">the <see cref="WebPage"/> to load</typeparam>
-  /// <param name="query"></param>
+  /// <param name="gotoUrl"></param>
+  /// <param name="wait"></param>
   /// <returns></returns>
-  public TPage NavigateToPage<TPage>(object? queryString = null)
+  public TPage NavigateToPage<TPage>(bool gotoUrl = true, bool wait = true)
     where TPage : Page<TPage>
   {
     var page = Find<TPage>();
+    return Navigate(page, gotoUrl, wait);
+  }
+
+  /// <summary>
+  /// Attempts to load the WebPage of <paramref name="pageType"/> into the browser
+  /// </summary>
+  /// <param name="pageType">the <see cref="WebPage"/> to load</param>
+  /// <param name="gotoUrl"></param>
+  /// <param name="wait"></param>
+  /// <returns></returns>
+  public WebPage NavigateToPage(Type pageType, bool gotoUrl = true, bool wait = true)
+  {
+    var hashed = new HashedPage(Driver, pageType);
+    pages.TryGetValue(hashed, out var page);
+    return Navigate(page, gotoUrl, wait);
+  }
+  
+  private TPage Navigate<TPage>(TPage? page, bool gotoUrl, bool wait) where TPage : WebPage
+  {
     if (page == null)
     {
       log.LogWarning("{PageType} not found in page cache", typeof(TPage));
       return (TPage)CurrentPage;
     }
 
-    CurrentPage = page;
-    Initialize(this);
-    return (TPage)CurrentPage;
-  }
-  
-  /// <summary>
-  /// Attempts to load the WebPage of <paramref name="pageType"/> into the browser
-  /// </summary>
-  /// <param name="pageType">the <see cref="WebPage"/> to load</param>
-  /// <param name="query"></param>
-  /// <returns></returns>
-  public WebPage NavigateToPage(Type pageType, object? query = null)
-  {
-    var hashed = new HashedPage(Driver, pageType);
-    pages.TryGetValue(hashed, out var page);
-
-    if (page == null)
+    if (gotoUrl)
     {
-      log.LogWarning("{PageType} not found in page cache", pageType);
-      return CurrentPage;
+      var relativePath = GetRelativePath(page);
+      Driver.Navigate().GoToUrl(Driver.Config.BaseUri + relativePath);
     }
 
     CurrentPage = page;
     Initialize(this);
-    return CurrentPage;
+
+    if (wait)
+    {
+      CurrentPage.Wait();
+    }
+
+    return (TPage)CurrentPage;
+  }
+
+  protected static string GetRelativePath(WebPage page)
+  {
+    var type = page.GetType();
+    var attr = type.GetCustomAttribute<RelativePathAttribute>();
+    return attr != null
+      ? attr.Path
+      : throw new InvalidOperationException($"{type.Name} requires [{nameof(RelativePathAttribute)}]");
   }
 
   /// <summary>
@@ -100,24 +122,17 @@ public class Landing<TStartPage> : WebSite where TStartPage : Page<TStartPage>
 {
   private readonly TStartPage landingPage;
   private readonly string baseAddress;
-  private readonly string relativePath;
   private bool initialized;
 
   public Landing(IWebDriverExtensions driver, IEnumerable<WebPage> pages) : base(driver, pages)
   {
     baseAddress = driver.Config.BaseUri;
 
-    var attr = typeof(TStartPage).GetCustomAttribute<RelativePathAttribute>();
-    if (attr == null)
-      throw new InvalidOperationException($"{typeof(TStartPage).Name} requires {nameof(RelativePathAttribute)}");
-
-    relativePath = attr.Path;
-
     landingPage = Find<TStartPage>() ??
       throw new ArgumentException(
         nameof(TStartPage),
         $"Unable to find Landing Page `{typeof(TStartPage).FullName}` in site's pages.");
-
+    
     CurrentPage = landingPage;
   }
 
@@ -130,11 +145,12 @@ public class Landing<TStartPage> : WebSite where TStartPage : Page<TStartPage>
   /// <returns></returns>
   public WebPage Initialize()
   {
+    var relativePath = GetRelativePath(landingPage);
     Driver.Navigate().GoToUrl(Driver.Config.BaseUri + relativePath);
     initialized = true;
     Initialize(this);
-    CurrentPage.Wait();
-    return CurrentPage;
+    landingPage.Wait();
+    return landingPage;
   }
 
   /// <summary>

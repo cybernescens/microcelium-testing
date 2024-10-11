@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Linq;
 using Microcelium.Testing.Logging;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -110,7 +109,7 @@ public abstract class RequireHostAttribute : TestActionAttribute
     EnsureFixture(test);
     OnStartBeforeTest(test);
     var builder = CreateHostBuilder();
-      
+    
     builder.ConfigureAppConfiguration(DefaultAppConfiguration);
     builder.ConfigureLogging(DefaultLogConfiguration);
     builder.ConfigureServices(DefaultServicesConfiguration);
@@ -173,12 +172,9 @@ public abstract class RequireHostAttribute : TestActionAttribute
 
   protected virtual void DefaultAppConfiguration(HostBuilderContext ctx, IConfigurationBuilder config)
   {
+    config.AddCommandLine(Environment.GetCommandLineArgs());
     config.AddJsonFile("test.settings.json", optional: true, reloadOnChange: false);
     config.AddEnvironmentVariables("microcelium");
-    
-    var args = Environment.GetCommandLineArgs();
-    if (args.Any())
-      config.AddCommandLine(args);
   }
 
   protected virtual void DefaultLogConfiguration(HostBuilderContext ctx, ILoggingBuilder logging)

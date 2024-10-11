@@ -22,8 +22,11 @@ public class LocalDiskCookiePersister : ICookiePersister
 
   private readonly LocalDiskCookiePersisterConfig config;
   private readonly ILogger<LocalDiskCookiePersister> log;
-  
-  private string currentTarget;
+
+  private string RootDirectory => Environment.ExpandEnvironmentVariables(config.DirectoryPath);
+  private string CurrentDirectory => DateTime.Today.ToString(config.CurrentDirectoryDateFormat);
+  private string TargetDirectory => Path.Combine(RootDirectory, CurrentDirectory);
+  private string InitializationFile => Path.Combine(TargetDirectory, ".initialized");
   
   public LocalDiskCookiePersister(LocalDiskCookiePersisterConfig config, ILoggerFactory lf)
   {
@@ -42,13 +45,11 @@ public class LocalDiskCookiePersister : ICookiePersister
       log.LogDebug("`{Directory}` directory created", root);
     }
 
-    var date = DateTime.Today.ToString("yyyyMMdd");
-
     if (config.DeleteExpired)
     {
       foreach (var dir in Directory
                  .EnumerateDirectories(root)
-                 .Where(x => !x.Equals(date, StringComparison.CurrentCultureIgnoreCase)))
+                 .Where(x => !x.Equals(CurrentDirectory, StringComparison.CurrentCultureIgnoreCase)))
       {
         try
         {
@@ -61,12 +62,10 @@ public class LocalDiskCookiePersister : ICookiePersister
       }
     }
 
-    currentTarget = Path.Combine(root, date);
-
-    if (!Directory.Exists(currentTarget))
+    if (!Directory.Exists(TargetDirectory))
     {
-      Directory.CreateDirectory(currentTarget);
-      log.LogDebug("`{Directory}` directory created", currentTarget);
+      Directory.CreateDirectory(TargetDirectory);
+      log.LogDebug("`{Directory}` directory created", TargetDirectory);
     }
   }
 
@@ -87,19 +86,20 @@ public class LocalDiskCookiePersister : ICookiePersister
       if (initialized)
         return;
       
-      slim.EnterWriteLock();
-
       try
       {
+        slim.EnterWriteLock();
+
         foreach (var cookie in container.GetAllCookies())
         {
           var name = NewFilename();
-          var path = Path.Combine(currentTarget, name);
+          var path = Path.Combine(TargetDirectory, name);
           await using var stream = new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.None, 4096, true);
           await JsonSerializer.SerializeAsync(stream, cookie);
           stream.Close();
         }
         
+        await File.WriteAllTextAsync(InitializationFile, CurrentDirectory);
         initialized = true;
       }
       catch (Exception e)
@@ -109,36 +109,46 @@ public class LocalDiskCookiePersister : ICookiePersister
       }
       finally
       {
-        slim.ExitWriteLock();
+        if (slim.IsWriteLockHeld)
+          slim.ExitWriteLock();
       }
     }
     finally
     {
-      slim.ExitUpgradeableReadLock();
+      if (slim.IsUpgradeableReadLockHeld)
+        slim.ExitUpgradeableReadLock();
     }
   }
 
   /// <inheritdoc />
   public async Task<CookieContainer> Retrieve(object? state = null)
   {
-    slim.EnterReadLock();
-
-    try
-    {
-      var poll = Task.Run(async () => { while (!initialized) await Task.Delay(50); });
-      var expire = Task.Delay(config.InitializationTimeout);
-      
-      if (poll != Task.WhenAny(poll, expire))
-        throw new InvalidOperationException("Timeout reached while waiting for cookie persister initialization");
-    }
-    finally
+    if (!Initialized)
     {
       slim.EnterReadLock();
+
+      try
+      {
+        var poll = Task.Run(
+          async () => {
+            while (!initialized) await Task.Delay(50);
+          });
+
+        var expire = Task.Delay(config.InitializationTimeout);
+
+        if (poll != Task.WhenAny(poll, expire))
+          throw new InvalidOperationException("Timeout reached while waiting for cookie persister initialization");
+      }
+      finally
+      {
+        if (slim.IsReadLockHeld)
+          slim.ExitReadLock();
+      }
     }
 
     var container = new CookieContainer();
 
-    foreach (var path in Directory.EnumerateFiles(currentTarget))
+    foreach (var path in Directory.EnumerateFiles(TargetDirectory).Where(x => !x.Equals(InitializationFile, StringComparison.CurrentCulture)))
     {
       await using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.None, 4096, true);
       var cookie = await JsonSerializer.DeserializeAsync<Cookie>(stream);
@@ -148,19 +158,5 @@ public class LocalDiskCookiePersister : ICookiePersister
     return container;
   }
 
-  public bool Initialized
-  {
-    get {
-      slim.EnterReadLock();
-
-      try
-      {
-        return initialized;
-      }
-      finally
-      {
-        slim.ExitReadLock();
-      }
-    }
-  }
+  public bool Initialized => File.Exists(InitializationFile);
 }

@@ -31,4 +31,9 @@ public class LocalDiskCookiePersisterConfig
   /// Initialization Timeout in milliseconds
   /// </summary>
   public int InitializationTimeout { get; set; } = 5000;
+
+  /// <summary>
+  /// The date format that determines the current directory to use
+  /// </summary>
+  public string CurrentDirectoryDateFormat { get; set; } = "yyyyMMdd";
 }

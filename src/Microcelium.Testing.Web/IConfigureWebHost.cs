@@ -1,8 +1,8 @@
-﻿using Microsoft.AspNetCore.Hosting;
+﻿using Microsoft.AspNetCore.Builder;
 
 namespace Microcelium.Testing.Web;
 
 public interface IConfigureWebHost : IRequireWebHost
 {
-  void Configure(IWebHostBuilder builder);
+  void Configure(WebApplicationBuilder builder);
 }

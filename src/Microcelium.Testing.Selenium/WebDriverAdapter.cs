@@ -95,8 +95,8 @@ public sealed class WebDriverAdapter : IWebDriverExtensions
   /// </summary>
   /// <param name="cookieContainer"></param>
   /// <param name="site"></param>
-  public void ImportCookies(CookieContainer cookieContainer, Uri site) =>
-    ImportCookies(cookieContainer.GetCookies(site));
+  public void ImportCookies(CookieContainer cookieContainer, Uri? site) =>
+    ImportCookies(site == null ? cookieContainer.GetAllCookies() : cookieContainer.GetCookies(site));
 
   /// <summary>
   /// </summary>
@@ -105,10 +105,13 @@ public sealed class WebDriverAdapter : IWebDriverExtensions
     cookies.ToList()
       .ForEach(
         c => {
-          //c.Domain = c.Domain.Contains("localhost") ? null : c.Domain;
+          c.Domain = c.Domain.Contains("localhost", StringComparison.OrdinalIgnoreCase) ? null : c.Domain;
+          //var domain = c.Domain.Equals("localhost", StringComparison.CurrentCultureIgnoreCase) ? null : c.Domain;
+          var cookie = new SeleniumCookie(c.Name, c.Value, c.Domain, c.Path, c.Expired ? c.Expires : null);
+          
           driver.Manage()
             .Cookies
-            .AddCookie(new SeleniumCookie(c.Name, c.Value, c.Domain, c.Path, null));
+            .AddCookie(cookie);
         });
 
   /// <inheritdoc />

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.ObjectModel;
+using System.Threading.Tasks;
 using OpenQA.Selenium;
 
 namespace Microcelium.Testing.Selenium.Pages;
@@ -25,7 +26,11 @@ public abstract class WebComponent : IWebComponent
   public virtual IWebComponent? Parent { get; }
 
   /// <inheritdoc />
-  public virtual void Wait() => Driver.WaitForElementToBeVisible(ElementIdentifier);
+  public virtual void Wait()
+  {
+    Driver.WaitForElementToBeVisible(ElementIdentifier);
+    Driver.WaitForJavascriptResult("document.readyState", "complete");
+  }
 
   /// <inheritdoc />
   public virtual By ElementIdentifier { get; } = By.CssSelector("*:first-child");
@@ -48,6 +53,57 @@ public abstract class WebComponent : IWebComponent
   }
 
   protected virtual ISearchContext SearchContext => WebElement;
+
+  protected internal bool Attempt(Action action, int attempts = 3)
+  {
+    for (var attempt = 0; attempt < attempts; attempt++) 
+    {
+      try
+      {
+        action();
+        return true;
+      }
+      catch { }
+
+      Task.Delay(250).GetAwaiter().GetResult();
+    }
+
+    return false;
+  }
+
+  protected internal async Task<bool> AttemptAsync(Action action, int attempts = 3)
+  {
+    for (var attempt = 0; attempt < attempts; attempt++) 
+    {
+      try
+      {
+        action();
+        return true;
+      }
+      catch { }
+
+      await Task.Delay(250);
+    }
+
+    return false;
+  }
+  
+  protected internal async Task<bool> AttemptAsync(Func<Task> action, int attempts = 3)
+  {
+    for (var attempt = 0; attempt < attempts; attempt++) 
+    {
+      try
+      {
+        await action();
+        return true;
+      }
+      catch { }
+
+      await Task.Delay(250);
+    }
+
+    return false;
+  }
 
   /// <summary>
   /// Will find a child with the give <paramref name="selector"/> and expects both

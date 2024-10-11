@@ -28,7 +28,7 @@ public interface IWebDriverExtensions : IWebDriver
   /// </summary>
   /// <param name="cookieContainer"></param>
   /// <param name="site"></param>
-  void ImportCookies(CookieContainer cookieContainer, Uri site);
+  void ImportCookies(CookieContainer cookieContainer, Uri? site = null);
 
   /// <summary>
   /// </summary>

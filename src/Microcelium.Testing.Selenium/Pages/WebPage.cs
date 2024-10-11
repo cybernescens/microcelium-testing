@@ -12,28 +12,24 @@ public abstract class WebPage : WebComponent<WebSite>
   private readonly Type pageType;
   private WebSite? site;
   private bool initialized;
-  private IWebElement webElement;
 
   protected WebPage(IWebDriverExtensions driver, Type pageType) : base(driver, null)
   {
     this.pageType = pageType ?? throw new ArgumentException(nameof(pageType));
     OnInitialized += (parentSite, _) => {
       site = (WebSite)parentSite!;
-      webElement = site.FindChild(ElementIdentifier)!;
       initialized = true;
     };
   }
 
   /// <inheritdoc />
-  public override IWebComponent Parent =>
-    initialized ? site! : throw new InvalidOperationException($"Parent `{nameof(Site)}` has not initialized this page");
+  public override IWebComponent Parent => Site;
 
   /// <inheritdoc />
   public override By ElementIdentifier => By.CssSelector("body");
 
-  /// <inheritdoc />
-  public override IWebElement WebElement => 
-    initialized ? webElement : throw new InvalidOperationException($"Parent `{nameof(Site)}` has not initialized this page");
+  ///// <inheritdoc />
+  //public override IWebElement WebElement => Site.FindChild(ElementIdentifier)!;
 
   /// <summary>
   ///   Parent <see cref="WebSite" />
