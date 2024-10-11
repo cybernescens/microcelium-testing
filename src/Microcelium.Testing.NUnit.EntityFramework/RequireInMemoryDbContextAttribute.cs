@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using NUnit.Framework.Interfaces;
 
@@ -17,6 +18,11 @@ public class RequireInMemoryDbContextAttribute<TContext> : RequireDbContextAttri
     EnsureFixture<RequireInMemoryDbContextAttribute<TContext>, IRequireInMemoryDbContext<TContext>>(test);
   }
 
+  protected override void AddEntityFramework(IServiceCollection services)
+  {
+    services.AddEntityFrameworkInMemoryDatabase();
+  }
+
   protected override void ApplyContextProvider(ITest test, IHostBuilder builder, DbContextOptionsBuilder options)
   {
     var name = GetDatabaseName(); 
@@ -31,7 +37,9 @@ public class RequireInMemoryDbContextAttribute<TContext> : RequireDbContextAttri
       configure => {
         if (test.Fixture is IConfigureInMemoryDbContext cfg)
           cfg.Configure(configure);
-      }); 
+      });
+
+    options.UseInternalServiceProvider(Host.Services);
   }
 
   private static string GetDatabaseName() =>

@@ -10,6 +10,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Microcelium.Testing.Data.EntityFramework\Microcelium.Testing.Data.EntityFramework.csproj" />
+    <ProjectReference Include="..\Microcelium.Testing.NUnit.NHibernate\Microcelium.Testing.NUnit.NHibernate.csproj" />
     <ProjectReference Include="..\Microcelium.Testing.NUnit\Microcelium.Testing.NUnit.csproj" />
   </ItemGroup>
 

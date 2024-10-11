@@ -25,6 +25,7 @@ public abstract class RequireDbContextAttribute<TContext> : RequireHostAttribute
   {
     builder.ConfigureServices(
       services => {
+        AddEntityFramework(services);
         services.AddDbContextFactory<TContext>(
           options => {
             ApplyContextProvider(test, builder, options);
@@ -34,6 +35,8 @@ public abstract class RequireDbContextAttribute<TContext> : RequireHostAttribute
           });
       });
   }
+
+  protected abstract void AddEntityFramework(IServiceCollection services);
 
   protected override void OnAfterCreateHost(ITest test)
   {

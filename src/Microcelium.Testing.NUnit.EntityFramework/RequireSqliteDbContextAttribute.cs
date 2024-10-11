@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using NUnit.Framework;
 using NUnit.Framework.Interfaces;
@@ -11,6 +12,11 @@ public class RequireSqliteDbContextAttribute<TContext> : RequireDbContextAttribu
   {
     base.EnsureFixture(test);
     EnsureFixture<RequireSqliteDbContextAttribute<TContext>, IRequireSqliteDbContext<TContext>>(test);
+  }
+
+  protected override void AddEntityFramework(IServiceCollection services)
+  {
+    services.AddEntityFrameworkSqlite();
   }
 
   protected override void ApplyContextProvider(ITest test, IHostBuilder builder, DbContextOptionsBuilder options)

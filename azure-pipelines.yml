@@ -25,7 +25,6 @@ steps:
   env:
     CoverletExclude: '[*.Tests]*,[*.SeleniumTests]*,[DataDx.Testing*]*'
     
-
 - task: PublishTestResults@2 
   inputs:
     testResultsFormat: VSTest
