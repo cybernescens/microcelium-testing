@@ -18,8 +18,18 @@ public abstract class RequireHostAttribute : TestActionAttribute
   protected IServiceScope? serviceScope;
   protected LogValidationContext? logContext;
   private bool requireLogValidation;
+  private IConfiguration? configuration;
 
   protected abstract IRequireHost Fixture { get; }
+
+  protected T? GetSetting<T>(string key)
+  {
+    if (configuration == null)
+      throw new InvalidOperationException("configuration is not yet available");
+
+    key = key.StartsWith("microceliumTests:", StringComparison.Ordinal) ? key : $"microceliumTests:{key}";
+    return configuration.GetValue<T>(key);
+  }
 
   /// <summary>
   /// This is always called first to ensure we have a matching Attribute &lt;-&gt; interface pair
@@ -112,6 +122,7 @@ public abstract class RequireHostAttribute : TestActionAttribute
     }
 
     /* now any customizations on the actual fixture */
+
     if (test.Fixture is IConfigureHostApplication h)
       builder.ConfigureAppConfiguration(h.Apply);
 
@@ -126,6 +137,7 @@ public abstract class RequireHostAttribute : TestActionAttribute
     OnHostBuilding(builder, test);
 
     Fixture.Host = host = CreateHost(builder);
+    configuration = host.Services.GetRequiredService<IConfiguration>();
     loggerFactory = host.Services.GetRequiredService<ILoggerFactory>();
     serviceScope = host.Services.CreateScope();
 
@@ -138,6 +150,7 @@ public abstract class RequireHostAttribute : TestActionAttribute
     OnHostBuilt(test);
     
     AddToContext(nameof(IHost), Fixture.Host);
+    AddToContext(nameof(IConfiguration), configuration);
     AddToContext(nameof(IServiceProvider), host.Services);
     AddToContext(nameof(ILoggerFactory), loggerFactory);
     AddToContext(nameof(IServiceScope), serviceScope);
@@ -203,7 +216,7 @@ public abstract class RequireHostAttribute : TestActionAttribute
   public override void AfterTest(ITest test)
   {
     OnStartAfterTest(test);
-    SafelyTry.Dispose(serviceScope);
+    SafelyTry.Dispose(() => serviceScope);
     OnEndAfterTest(test);
   }
 

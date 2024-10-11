@@ -177,20 +177,25 @@ public class AssemblyScanner
       assembly = context.LoadFromAssemblyPath(assemblyPath);
       return true;
     }
-    catch (Exception ex) when (ex is BadImageFormatException || ex is FileLoadException)
+    catch (Exception ex) 
     {
-      results.ErrorsThrownDuringScanning = true;
-
-      if (ThrowExceptions)
+      if (ex is BadImageFormatException or FileLoadException)
       {
-        var errorMessage = $"Could not load '{assemblyPath}'. Consider excluding that assembly from the scanning.";
-        throw new Exception(errorMessage, ex);
+        results.ErrorsThrownDuringScanning = true;
+
+        if (ThrowExceptions)
+        {
+          var errorMessage = $"Could not load '{assemblyPath}'. Consider excluding that assembly from the scanning.";
+          throw new Exception(errorMessage, ex);
+        }
+
+        var skippedFile = new SkippedFile(assemblyPath, ex.Message);
+        results.SkippedFiles.Add(skippedFile);
+
+        return false;
       }
 
-      var skippedFile = new SkippedFile(assemblyPath, ex.Message);
-      results.SkippedFiles.Add(skippedFile);
-
-      return false;
+      throw;
     }
   }
 

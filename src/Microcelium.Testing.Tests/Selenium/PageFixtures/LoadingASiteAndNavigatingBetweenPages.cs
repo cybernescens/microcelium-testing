@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using FluentAssertions;
 using Microcelium.Testing.Selenium.Pages;
 using Microcelium.Testing.Web;
@@ -16,20 +17,17 @@ namespace Microcelium.Testing.Selenium.PageFixtures;
 [RequireSelenium]
 internal class LoadingASiteAndNavigatingBetweenPages :
   IConfigureSeleniumWebDriverConfig,
-  IRequireWebHostOverride, 
+  IRequireWebHostOverride,
   IRequireScreenshots,
   IRequireWebSite<LoadingASiteAndNavigatingBetweenPages.Page1>
 {
   public IHost Host { get; set; }
-  public Uri HostUri { get; set; }
   public IWebDriverExtensions Driver { get; set; }
-  public Landing<Page1> Site { get; set; }
-  public string ScreenshotDirectory { get; set; }
 
-  public void Configure(WebDriverConfig config)
-  {
-    config.BaseUri = HostUri.ToString();
-  }
+  public void Configure(WebDriverConfig config) { config.BaseUri = HostUri.ToString(); }
+
+  public string ScreenshotDirectory { get; set; }
+  public Uri HostUri { get; set; }
 
   public void Configure(WebApplication endpoint)
   {
@@ -37,22 +35,26 @@ internal class LoadingASiteAndNavigatingBetweenPages :
       "/page1",
       context => {
         context.Response.ContentType = "text/html";
-        return context.Response.WriteAsync("<html><body><a href='page2'>Page 2</a></body></html>");
+        return context.Response.WriteAsync(
+          "<html><body><a href=\"page2\">Page 2</a></body></html>");
       });
 
     endpoint.MapGet(
       "/page2",
       context => {
         context.Response.ContentType = "text/html";
-        return context.Response.WriteAsync("<html><body><label><input type='radio' />Foo</label></body></html>");
+        return context.Response.WriteAsync(
+          "<html><body><label><input type=\"radio\" name=\"foo-bar\">Foo</label><label><input type=\"radio\" name=\"foo-bar\">Bar</label></body></html>");
       });
   }
+
+  public Landing<Page1> Site { get; set; }
 
   [Test]
   public void NavigateToPage1ThenPage2AndClickTheRadioButtonUsingGenerics() =>
     Site.Home
       .ClickLinkToPage2()
-      .GetRadioButton()
+      .RadioButton
       .Click()
       .Should()
       .BeEquivalentTo(
@@ -65,7 +67,7 @@ internal class LoadingASiteAndNavigatingBetweenPages :
   public void NavigateToPage1ThenPage2AndClickTheRadioButtonUsingType() =>
     Site.Home
       .ClickLinkToPage2TheHardWay()
-      .GetRadioButton()
+      .RadioButton
       .Click()
       .Should()
       .BeEquivalentTo(
@@ -74,36 +76,48 @@ internal class LoadingASiteAndNavigatingBetweenPages :
           IsSelected = true
         });
 
-  internal class Page1 : Page<Page1>, IHaveRelativePath
+  [RelativePath("/page1")]
+  internal class Page1 : Page<Page1>
   {
     public Page1(IWebDriverExtensions driver) : base(driver) { }
-    protected override By PageLoadedIdentifier => By.CssSelector("a[href='page2']");
-    public override string RelativePath => "/page1";
+
+    protected IWebElement Page2Link => FindChild("a");
 
     public Page2 ClickLinkToPage2()
     {
-      Driver.FindElement(By.TagName("a")).Click();
+      Page2Link.Click();
       return Site.NavigateToPage<Page2>();
     }
 
     public Page2 ClickLinkToPage2TheHardWay()
     {
-      Driver.FindElement(By.TagName("a")).Click();
+      Page2Link.Click();
       return (Page2)Site.NavigateToPage(typeof(Page2));
     }
   }
 
+  [RelativePath("/page2")]
   internal class Page2 : Page<Page2>
   {
-    public Page2(IWebDriverExtensions driver) : base(driver) { }
-    protected override By PageLoadedIdentifier => By.CssSelector("input[type='radio']");
-    public override string RelativePath => "/page1";
+    public Page2(IWebDriverExtensions driver) : base(driver)
+    {
+      OnInitialized += (_, _) => {
+        RadioButton = new RadioGroup(driver, this);
+        RadioButton.Initialize(this);
+      };
+    }
 
-    public RadioButton<Page2> GetRadioButton() =>
-      new(
-        Driver,
-        this,
-        Driver.FindElement(By.CssSelector("input[type='radio']")),
-        By.XPath("./.."));
+    public RadioGroup RadioButton { get; private set; }
+
+    internal class RadioGroup : RadioButtonGroup<Page2>
+    {
+      public RadioGroup(IWebDriverExtensions driver, Page2 parent) : base(driver, parent, By.CssSelector("input")) { }
+
+      public OptionBox<RadioButtonGroup<Page2>> Click()
+      {
+        Options[0].Click();
+        return Options[0];
+      }
+    }
   }
 }

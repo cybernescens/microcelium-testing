@@ -38,12 +38,19 @@ public static class SafelyTry
   }
 
   [DebuggerNonUserCode]
-  public static void Dispose(IDisposable? disposable, ILogger? log = null)
+  public static void Dispose(Expression<Func<IDisposable?>> disposable, ILogger? log = null)
   {
-    if (disposable == null)
-      return;
-
-    Action(disposable, x => x.Dispose(), log);
+    try
+    {
+      log?.LogDebug("Attempting to dispose object from '{Disposable}'", disposable);
+      var @delegate = (Delegate)disposable.Compile();
+      var dispose = (IDisposable?)@delegate.DynamicInvoke();
+      dispose?.Dispose();
+    }
+    catch (Exception e)
+    {
+      log?.LogError(e.InnerException ?? e, "Failed to dispose object from '{Disposable}'", disposable);
+    }
   }
 
   [DebuggerNonUserCode]

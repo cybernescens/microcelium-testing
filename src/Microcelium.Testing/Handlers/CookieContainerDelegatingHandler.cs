@@ -10,7 +10,7 @@ public class CookieContainerDelegatingHandler : DelegatingHandler
 {
   private readonly CookieContainer container;
 
-  public CookieContainerDelegatingHandler(CookieContainer container, HttpMessageHandler handler) : base(handler)
+  public CookieContainerDelegatingHandler(CookieContainer container)
   {
     this.container = container;
   }

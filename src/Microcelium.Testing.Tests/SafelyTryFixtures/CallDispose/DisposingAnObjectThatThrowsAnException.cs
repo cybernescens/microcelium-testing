@@ -21,7 +21,7 @@ internal class DisposingAnObjectThatThrowsAnException : IRequireLogValidation, I
     var log = LoggerFactory.CreateLogger<DisposingAnObjectThatThrowsAnException>();
     disposable = Substitute.For<IDisposable>();
     disposable.When(x => x.Dispose()).Throw<Exception>();
-    SafelyTry.Dispose(disposable, log);
+    SafelyTry.Dispose(() => disposable, log);
   }
 
   [Test]
@@ -29,11 +29,11 @@ internal class DisposingAnObjectThatThrowsAnException : IRequireLogValidation, I
 
   [Test]
   public void WritesPreActionToTraceListener() =>
-    LogContext.Received("Attempting action '.+'", LogLevel.Debug, MatchMode.Regex);
+    LogContext.Received("Attempting to dispose object from '.+'", LogLevel.Debug, MatchMode.Regex);
 
   [Test]
   public void WritesErrorToTraceListener() =>
-    LogContext.Received("Failed to perform action '.+'", LogLevel.Error, MatchMode.Regex, new Exception());
+    LogContext.Received("Failed to dispose object from '.+'", LogLevel.Error, MatchMode.Regex, new Exception());
 
   public IHost Host { get; set; }
   public ILoggerFactory LoggerFactory { get; set; }

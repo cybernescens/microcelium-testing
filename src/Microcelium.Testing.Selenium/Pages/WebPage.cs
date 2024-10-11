@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using OpenQA.Selenium;
 
 namespace Microcelium.Testing.Selenium.Pages;
@@ -8,30 +7,39 @@ namespace Microcelium.Testing.Selenium.Pages;
 /// <summary>
 ///   Represents a page one can navigate to
 /// </summary>
-public abstract class WebPage : IWebPage, IHaveRelativePath
+public abstract class WebPage : WebComponent<WebSite>
 {
   private readonly Type pageType;
-  private IWebSite? site;
+  private WebSite? site;
+  private bool initialized;
+  private IWebElement webElement;
 
-  protected WebPage(IWebDriverExtensions driver, Type pageType)
+  protected WebPage(IWebDriverExtensions driver, Type pageType) : base(driver, null)
   {
     this.pageType = pageType ?? throw new ArgumentException(nameof(pageType));
-    Driver = driver;
+    OnInitialized += (parentSite, _) => {
+      site = (WebSite)parentSite!;
+      webElement = site.FindChild(ElementIdentifier)!;
+      initialized = true;
+    };
   }
 
-  /// <summary>
-  /// Parent sitew
-  /// </summary>
-  protected IWebSite Site
-  {
-    get => site ?? throw new InvalidOperationException($"`{nameof(Site)}` has not been initialized");
-    set => site = value;
-  }
+  /// <inheritdoc />
+  public override IWebComponent Parent =>
+    initialized ? site! : throw new InvalidOperationException($"Parent `{nameof(Site)}` has not initialized this page");
+
+  /// <inheritdoc />
+  public override By ElementIdentifier => By.CssSelector("body");
+
+  /// <inheritdoc />
+  public override IWebElement WebElement => 
+    initialized ? webElement : throw new InvalidOperationException($"Parent `{nameof(Site)}` has not initialized this page");
 
   /// <summary>
-  ///   the <see cref="IWebDriver" />
+  ///   Parent <see cref="WebSite" />
   /// </summary>
-  public IWebDriverExtensions Driver { get; }
+  protected WebSite Site =>
+    initialized ? site! : throw new InvalidOperationException($"Parent `{nameof(Site)}` has not initialized this page");
 
   /// <summary>
   ///   if desired, a the configured timeout for the page
@@ -39,30 +47,15 @@ public abstract class WebPage : IWebPage, IHaveRelativePath
   public virtual TimeSpan PageTimeout => Driver.Config.Timeout.PageLoad;
 
   /// <summary>
-  ///   A unique Selector for the page
-  /// </summary>
-  protected abstract By PageLoadedIdentifier { get; }
-
-  /// <summary>
-  ///   The page''s title
+  ///   The page's title
   /// </summary>
   public string Title => Driver.Title;
-
-  /// <summary>
-  ///   the relative path to this <see cref="WebPage" />
-  /// </summary>
-  public abstract string RelativePath { get; }
-
-  /// <summary>
-  ///   Waits for the <see cref="PageLoadedIdentifier" /> to load before continuing
-  /// </summary>
-  public void WaitForPageToLoad() => Driver.WaitForElementToBeVisible(PageLoadedIdentifier);
 
   /// <inheritdoc />
   public override int GetHashCode() => DefaultComparer.GetHashCode(this);
 
   /// <inheritdoc />
-  public override string ToString() => $"{pageType.Name} [{PageLoadedIdentifier}]";
+  public override string ToString() => $"{pageType.Name} [{ElementIdentifier}]";
 
   private sealed class WebPageComparer : IEqualityComparer<WebPage>
   {
@@ -88,12 +81,6 @@ public abstract class WebPage : IWebPage, IHaveRelativePath
   ///   Conceptually: has nothing to do with Content
   /// </summary>
   public static IEqualityComparer<WebPage> DefaultComparer { get; } = new WebPageComparer();
-
-  internal WebPage SetSite(WebSite site)
-  {
-    Site = site;
-    return this;
-  }
 }
 
 /// <summary>
@@ -106,10 +93,10 @@ public abstract class Page<TPage> : WebPage where TPage : Page<TPage>
   /// <summary>
   ///   Once the page is loaded a reference to self
   /// </summary>
-  /// <returns></returns>
-  public TPage PageShouldBeLoaded()
+  /// <returns>a reference to itself</returns>
+  public TPage OnceLoaded()
   {
-    WaitForPageToLoad();
+    Wait();
     return (TPage)this;
   }
 }

@@ -36,6 +36,13 @@ public interface IWebDriverExtensions : IWebDriver
   void ImportCookies(IEnumerable<Cookie> cookies);
 
   /// <summary>
+  /// Exports all cookies in the current driver
+  /// </summary>
+  /// <param name="container">the target <see cref="CookieContainer"/></param>
+  /// <param name="site">leave <code>null</code> for all cookies, or provide a site for only a subset</param>
+  void ExportCookies(CookieContainer container, Uri? site = null);
+
+  /// <summary>
   /// </summary>
   /// <param name="x"></param>
   /// <param name="y"></param>

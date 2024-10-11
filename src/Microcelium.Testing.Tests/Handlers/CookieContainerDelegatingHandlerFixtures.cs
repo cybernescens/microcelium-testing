@@ -9,7 +9,6 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 using NUnit.Framework;
 
 namespace Microcelium.Testing.Handlers;
@@ -35,19 +34,11 @@ internal class CookieContainerDelegatingHandlerFixtures : IRequireWebHostOverrid
   
   public void Apply(HostBuilderContext context, IServiceCollection services)
   {
-    services.AddTransient<LoggingDelegatingHandler>();
     services
-      .AddHttpClient(
-        "cookie-delegate",
-        client => { client.BaseAddress = HostUri; })
-      .ConfigurePrimaryHttpMessageHandler(
-        () => new HttpClientHandler {
-          UseCookies = true, 
-          CookieContainer = container, 
-          ClientCertificateOptions = ClientCertificateOption.Automatic
-        })
-      .AddHttpMessageHandler(
-        sp => new LoggingDelegatingHandler(sp.GetRequiredService<ILoggerFactory>()) { IncludeContents = false });
+      .AddTransient<CookieContainerDelegatingHandler>()
+      .AddHttpClient("cookie-delegate", client => { client.BaseAddress = HostUri; })
+      .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler { UseCookies = true })
+      .AddHttpMessageHandler(_ => new CookieContainerDelegatingHandler(container));
   }
 
   [SetUp]

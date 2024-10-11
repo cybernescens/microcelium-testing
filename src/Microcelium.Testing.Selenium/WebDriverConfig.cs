@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Net.Http;
-using Microsoft.Extensions.Logging;
 
 namespace Microcelium.Testing.Selenium;
 
@@ -123,37 +122,45 @@ public class AuthenticationConfig
 {
   public static readonly string SectionName = nameof(WebDriverConfig.Authentication);
 
-  public static readonly string CredentialModeLocal = "Local";
-  public static readonly string CredentialModeKeyVault = "KeyVault";
+  public readonly struct CredentialModes
+  {
+    public static readonly string Local = "Local";
+    public static readonly string KeyVault = "KeyVault";
+  }
 
   /// <summary>
   /// The Client ID of the Proxy Application. Public Client Authorization Flow should be enabled as well
   /// </summary>
-  public string? ClientId { get; set; }
+  //public string? ClientId { get; set; }
 
   /// <summary>
   /// The CredentialMode, use <code>Local</code> to use <see cref="Username"/> and <see cref="Password"/>
   /// and use <code>KeyVault</code> to use <see cref="KeyVaultUri"/>. In the Key Value we will look
-  /// for a secret named WebDriver__Auth__{KeyVaultSecretPrefix}_Username and WebDriver__Auth__{KeyVaultSecretPrefix}_Password
-  /// where the value of <code>KeyVaultSecretPrefix</code> can be provided by <see cref="KeyVaultSecretPrefix"/>.
-  /// <see cref="KeyVaultSecretPrefix"/> defaults to <code>Selenium</code>
+  /// for a secret named WebDriver__Auth__{KeyVaultSecretName}_Username and WebDriver__Auth__{KeyVaultSecretName}_Password
+  /// where the value of <code>KeyVaultSecretName</code> can be provided by <see cref="KeyVaultSecretName"/>.
+  /// <see cref="KeyVaultSecretName"/> defaults to <code>Selenium</code>
   /// </summary>
   public string CredentialMode { get; set; } = "Local";
-  
+
   /// <summary>
-  /// The Username to login as
+  /// This Key Vault is blocked by firewall and managed by RBAC, so
+  /// <list type="number">
+  /// <item>Be sure to add the client IP to the firewall</item>
+  /// <item>If running locally as a developer ensure your AD Account can List/Get Secrets</item>
+  /// <item>If running as an automation account that user can List/Get Secrets</item>
+  /// </list>
   /// </summary>
-  public string? KeyVaultUri { get; set; }
+  public string? KeyVaultUri { get; set; } = "https://admin-keyvault-shared.vault.azure.net/";
+
+  /// <summary>
+  /// The Secret that contains the Credential Password
+  /// </summary>
+  public string KeyVaultSecretName { get; set; } = "Admin-Credentials-SeleniumTest";
 
   /// <summary>
   /// The Username to login as
   /// </summary>
-  public string KeyVaultSecretPrefix { get; set; } = "Selenium";
-
-  /// <summary>
-  /// The Username to login as
-  /// </summary>
-  public string? Username { get; set; }
+  public string? Username { get; set; } = "SeleniumUser";
 
   /// <summary>
   /// The password to use
@@ -163,21 +170,21 @@ public class AuthenticationConfig
   /// <summary>
   /// The scopes to request with OpenId
   /// </summary>
-  public string[] Scopes { get; set; } = Array.Empty<string>();
+  //public string[] Scopes { get; set; } = Array.Empty<string>();
 
   /// <summary>
   /// Are we using Local Credentials
   /// </summary>
   /// <returns></returns>
   public bool IsLocalCredentials() => 
-    CredentialMode.Equals(CredentialModeLocal, StringComparison.OrdinalIgnoreCase);
+    CredentialMode.Equals(CredentialModes.Local, StringComparison.OrdinalIgnoreCase);
 
   /// <summary>
   /// Are we using remote credentials stored in Azure Key Vault
   /// </summary>
   /// <returns></returns>
   public bool IsKeyVaultCredentials() =>
-    CredentialMode.Equals(CredentialModeKeyVault, StringComparison.OrdinalIgnoreCase);
+    CredentialMode.Equals(CredentialModes.KeyVault, StringComparison.OrdinalIgnoreCase);
 }
 
 /// <summary>

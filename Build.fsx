@@ -79,6 +79,8 @@ Target.create "ToLocalNuget"  <| Targets.publishLocal binDir versionstr
     set TargetVersion=1.14 *)
 Target.create "ToLocalPackageRepo" <| Targets.packageLocal srcDir
 
+"Build" ==> "ToLocalPackageRepo"
+
 "PrepareSelenium"
   ==> "Clean" 
   ==> "Version"

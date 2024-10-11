@@ -1,5 +1,4 @@
-﻿using System;
-using Microsoft.Extensions.Hosting;
+﻿using Microsoft.Extensions.Hosting;
 using NUnit.Framework.Interfaces;
 
 namespace Microcelium.Testing;

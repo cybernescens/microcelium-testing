@@ -20,7 +20,7 @@ internal class DisposingAnObject : IRequireLogValidation, IRequireLogging
   {
     var log = LoggerFactory.CreateLogger<DisposingAnObject>();
     disposable = Substitute.For<IDisposable>();
-    SafelyTry.Dispose(disposable, log);
+    SafelyTry.Dispose(() => disposable, log);
   }
 
   [Test]
@@ -28,7 +28,7 @@ internal class DisposingAnObject : IRequireLogValidation, IRequireLogging
 
   [Test]
   public void WritesPreActionToTraceListener() =>
-    LogContext.Received("Attempting action '.+'", LogLevel.Debug, MatchMode.Regex);
+    LogContext.Received("Attempting to dispose object from '.+'", LogLevel.Debug, MatchMode.Regex);
 
   public IHost Host { get; set; }
   public ILoggerFactory LoggerFactory { get; set; }

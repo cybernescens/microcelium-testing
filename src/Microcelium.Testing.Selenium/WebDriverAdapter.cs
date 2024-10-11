@@ -111,6 +111,19 @@ public sealed class WebDriverAdapter : IWebDriverExtensions
             .AddCookie(new SeleniumCookie(c.Name, c.Value, c.Domain, c.Path, null));
         });
 
+  /// <inheritdoc />
+  public void ExportCookies(CookieContainer container, Uri? site = null)
+  {
+    var cookies = site == null
+      ? driver.Manage().Cookies.AllCookies.ToList()
+      : driver.Manage().Cookies.AllCookies
+        .Where(x => x.Domain.Equals(site.Host, StringComparison.CurrentCultureIgnoreCase))
+        .ToList();
+
+    cookies.ForEach(
+      x => container.Add(new NetCookie(x.Name, x.Value, x.Path, x.Domain)));
+  }
+
   /// <summary>
   /// </summary>
   /// <param name="x"></param>
