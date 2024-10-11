@@ -1,100 +1,59 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Collections.Specialized;
-using System.IO;
-using System.Linq;
 using System.Threading.Tasks;
 using FluentAssertions;
-using Microcelium.Testing.Net;
-using Microcelium.Testing.NUnit;
-using Microcelium.Testing.NUnit.Selenium;
-using Microcelium.Testing.Selenium.Pages;
-using Microsoft.AspNetCore;
+using Microcelium.Testing.Web;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Routing;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
+using Microsoft.Extensions.Hosting;
 using NUnit.Framework;
 using OpenQA.Selenium;
 
-namespace Microcelium.Testing.Selenium
+namespace Microcelium.Testing.Selenium;
+
+[Parallelizable(ParallelScope.Fixtures)]
+[RequireDownloadDirectory]
+[RequiresWebEndpoint]
+[RequiresSelenium]
+internal class CreatingAWebDriverThatDownloadsToASpecificDirectory : 
+  IRequireDownloadDirectory, 
+  IConfigureSeleniumWebDriverConfig,
+  IRequireWebHostOverride
 {
-  [Parallelizable(ParallelScope.None)]
-  internal class CreatingAWebDriverThatDownloadsToASpecificDirectory :
-    IRequireWebPage<SelfHostedSite, DownloadPage>, 
-    IRequireDownloadDirectory, 
-    IRequireLogger,
-    IProvideServiceCollectionConfiguration
+  public void Configure(WebDriverConfig config)
   {
-    private string url;
-
-    public void Configure(IServiceCollection services)
-    {
-      url = $"http://localhost:{TcpPort.NextFreePort()}";
-      var args = new NameValueCollection();
-      args.Add("BaseUrl", url);
-      services.AddInMemoryWebDriverConfig(args.Keys.Cast<string>().Select(x => KeyValuePair.Create(x, args[x])));
-      services.AddWebComponents(typeof(SelfHostedSite), typeof(DownloadPage));
-    }
-
-    public SelfHostedSite Site { get; set; }
-    public DownloadPage Page { get; set; }
-
-    [Test]
-    public async Task SavesFileToDirectory()
-    {
-      var log = this.CreateLogger();
-      var dd = this.GetDownloadDirectory();
-
-      using var host = WebHost.Start(
-        url,
-        router => router
-          .MapGet(
-            "/",
-            (req, res, data) => {
-              res.ContentType = "text/html";
-              return res.WriteAsync("<a href='download'>download</a>");
-            })
-          .MapGet(
-            "download",
-            (req, res, data) => {
-              res.ContentType = "application/octet-stream";
-              res.Headers.Append("Content-Disposition", @"attachment; filename =""download.txt""");
-              return res.WriteAsync("file content");
-            }));
-
-      Page.Navigate();
-
-      await Page.Wait();
-      var fileInfo = Page.Download(dd);
-
-      fileInfo.Exists.Should()
-        .BeTrue("file '{0}' should exist", fileInfo.FullName);
-    }
+    config.BaseUri = HostUri.ToString();
   }
 
-  internal class SelfHostedSite : WebSite
+  public void Configure(WebApplication endpoint)
   {
-    public SelfHostedSite(IWebDriver driver, IOptions<WebDriverConfig> config) : base(driver, config) { }
+    endpoint.MapGet("/", context => {
+      context.Response.ContentType = "text/html";
+      return context.Response.WriteAsync("<html><body><a href='download'>download</a></body></html>");
+    });
+
+    endpoint.MapGet("/download", context => {
+      context.Response.ContentType = "application/octet-stream";
+      context.Response.Headers.Append("Content-Disposition", @"attachment; filename=""download.txt""");
+      return context.Response.WriteAsync("file content");
+    });
   }
 
-  internal class DownloadPage : WebPage<DownloadPage>
+  [Test]
+  public Task SavesFileToDirectory()
   {
-    private readonly ILogger<DownloadPage> _log;
+    Driver.Navigate().GoToUrl(HostUri);
+    Driver.FindElement(By.CssSelector("a[href='download']")).Click();
+    var fileInfo = Driver.WaitForFileDownload(DownloadDirectory, "download.txt");
 
-    public DownloadPage(IWebSite site, ILoggerFactory lf, TimeSpan? timeout = null) : base(site, lf, timeout)
-    {
-      _log = lf.CreateLogger<DownloadPage>();
-    }
+    fileInfo.Should().NotBeNull();
+    fileInfo!.Exists.Should().BeTrue("file '{0}' should exist", fileInfo.FullName);
 
-    public override By LoadedIdentifier => By.CssSelector("a[href=\"download\"]");
-    public override string RelativePath => "/";
-
-    public FileInfo Download(string dd)
-    {
-      Parent.Driver.FindElement(LoadedIdentifier).Click();
-      return Parent.Driver.WaitForFileDownload(dd, "download.txt", _log);
-    }
+    return Task.CompletedTask;
   }
+
+  public string DownloadDirectory { get; set; }
+  public IHost Host { get; set; }
+  public IWebDriverExtensions Driver { get; set; }
+  public Uri HostUri { get; set; }
 }

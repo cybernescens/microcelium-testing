@@ -1,9 +1,6 @@
-﻿namespace Microcelium.Testing.Selenium
+﻿namespace Microcelium.Testing.Selenium;
+
+public interface IRequireScreenshots : IRequireDirectory
 {
-  /// <summary>
-  /// Decorator for taking screenshots
-  /// </summary>
-  public interface IRequireScreenshots
-  {
-  }
+  string? ScreenshotDirectory { get; set; }
 }

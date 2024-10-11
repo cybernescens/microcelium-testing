@@ -1,85 +1,109 @@
 ﻿using System;
-using Microsoft.Extensions.Options;
+using System.Collections.Generic;
+using System.Linq;
+using Microsoft.Extensions.Logging;
 using OpenQA.Selenium;
 
-namespace Microcelium.Testing.Selenium.Pages
+namespace Microcelium.Testing.Selenium.Pages;
+
+public interface IWebSite
 {
-  /// <summary>
-  /// Conceptually represents a "Web Site" which hosts many "Web Pages"
-  /// </summary>
-  public interface IWebSite
+  WebPage CurrentPage { get; }
+  TPage NavigateToPage<TPage>(string? query = null) where TPage : Page<TPage>, IHaveRelativePath;
+  WebPage NavigateToPage(Type pageType, string? query = null);
+  WebPage Load();
+}
+
+public abstract class WebSite : IWebSite
+{
+  /* this is always going to be concrete types, i.e. types that implement Page<TPage> */
+  private readonly HashSet<WebPage> pages;
+  private readonly ILogger log;
+
+  protected WebSite(IWebDriverExtensions driver, IEnumerable<WebPage> pages)
   {
-    /// <summary>
-    /// Prepare page uses an implanted <see cref="PageFactory"/> to create <see cref="IWebPage"/>s
-    /// </summary>
-    /// <typeparam name="TPage"></typeparam>
-    /// <returns></returns>
-    TPage PreparePage<TPage>() where TPage : IWebPage;
-
-    /// <summary>
-    /// A factory method responsible for creating <see cref="IWebPage"/> in the proper scope.
-    /// </summary>
-    Func<Type, IWebPage> PageFactory { get; }
-
-    /// <summary>
-    /// The currently loaded page's title
-    /// </summary>
-    string CurrentTitle { get; }
-
-    /// <summary>
-    /// the Selenium <see cref="IWebDriver"/>
-    /// </summary>
-    IWebDriver Driver { get; }
-
-    /// <summary>
-    /// the Configured <see cref="WebDriverConfig"/> that in turn configured the <see cref="IWebDriver"/>
-    /// </summary>
-    WebDriverConfig Config { get; }
+    Driver = driver;
+    this.log = driver.LoggerFactory.CreateLogger<WebSite>();
+    this.pages = new HashSet<WebPage>(pages.Select(x => x.SetSite(this)), WebPage.DefaultComparer);
   }
+
+  public IWebDriverExtensions Driver { get; }
+  public WebPage CurrentPage { get; protected set; }
   
-  /// <inheritdoc />
-  public abstract class WebSite : IWebSite
+  public TPage NavigateToPage<TPage>(string? queryString = null)
+    where TPage : Page<TPage>, IHaveRelativePath
   {
-    /// <summary>
-    /// Instantiates an <see cref="WebSite"/>
-    /// </summary>
-    /// <param name="driver">the Selenium <see cref="IWebDriver"/></param>
-    /// <param name="config">the configured <see cref="WebDriverConfig"/></param>
-    protected WebSite(IWebDriver driver, IOptions<WebDriverConfig> config)
+    var page = Find<TPage>();
+    if (page == null)
     {
-      Driver = driver;
-      Config = config.Value;
+      log.LogWarning("{PageType} not found in page cache", typeof(TPage));
+      return (TPage)CurrentPage;
     }
 
-    /// <inheritdoc />
-    TPage IWebSite.PreparePage<TPage>() => (TPage) PageFactory(typeof(TPage));
-
-    /// <inheritdoc />
-    public Func<Type, IWebPage> PageFactory { get; internal set; }
-
-    /// <inheritdoc />
-    public string CurrentTitle => Driver.Title;
-
-    /// <inheritdoc />
-    public IWebDriver Driver { get; }
-
-    /// <inheritdoc />
-    public WebDriverConfig Config { get; }
+    CurrentPage = page;
+    return (TPage)CurrentPage;
   }
 
-  /// <summary>
-  /// Fired when a Page is Loading and Loaded
-  /// </summary>
-  public record ComponentLoadEvent
+  public WebPage NavigateToPage(Type pageType, string? query = null)
   {
-    /// <summary>
-    /// The entire <see cref="Uri"/> the Page represents
-    /// </summary>
-    public Uri Path;
+    var hashed = new HashedPage(Driver, pageType);
+    pages.TryGetValue(hashed, out var page);
 
-    /// <summary>
-    /// The <see cref="IWebPage"/> responsible for the event
-    /// </summary>
-    public IWebPage Page;
+    if (page == null)
+    {
+      log.LogWarning("{PageType} not found in page cache", pageType);
+      return CurrentPage;
+    }
+
+    CurrentPage = page;
+    return CurrentPage;
   }
+
+  public WebPage Load()
+  {
+    var relative = 
+      CurrentPage.RelativePath.StartsWith("/", StringComparison.InvariantCultureIgnoreCase)
+        ? CurrentPage.RelativePath
+        : $"/{CurrentPage.RelativePath}";
+
+    Driver.Navigate().GoToUrl(Driver.Config.BaseUri + relative);
+    CurrentPage.WaitForPageToLoad();
+    return CurrentPage;
+  }
+
+  protected TPage? Find<TPage>() where TPage : Page<TPage>
+  {
+    var hashed = new HashedPage(Driver, typeof(TPage));
+    pages.TryGetValue(hashed, out var page);
+    return (TPage?)page;
+  }
+
+  private class HashedPage : WebPage
+  {
+    public HashedPage(IWebDriverExtensions driver, Type pageType) : base(driver, pageType) { }
+    protected override By PageLoadedIdentifier => throw new NotImplementedException();
+    public override string RelativePath => throw new NotImplementedException();
+    public override int GetHashCode() => DefaultComparer.GetHashCode(this);
+  }
+}
+
+public class Landing<TStartPage> : WebSite where TStartPage : Page<TStartPage>
+{
+  private readonly TStartPage landingPage;
+  private readonly string baseAddress;
+
+  public Landing(IWebDriverExtensions driver, IEnumerable<WebPage> pages) : base(driver, pages)
+  {
+    baseAddress = driver.Config.BaseUri;
+    landingPage = Find<TStartPage>() ??
+      throw new ArgumentException(
+        nameof(TStartPage),
+        $"Unable to find Landing Page `{typeof(TStartPage).FullName}` in site's pages.");
+
+    CurrentPage = landingPage;
+  }
+
+  public TStartPage Home => landingPage;
+
+  public override string ToString() => $"{baseAddress} | {Home} [Landing]";
 }

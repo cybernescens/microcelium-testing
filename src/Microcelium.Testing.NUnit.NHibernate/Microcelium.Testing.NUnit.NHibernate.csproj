@@ -1,16 +1,20 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net5.0</TargetFramework>
+    <TargetFramework>net6.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <NoWarn>1591</NoWarn>
+    <RootNamespace>Microcelium.Testing.NHibernate</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="FluentNHibernate" Version="3.1.0" />
-    <PackageReference Include="NHibernate" Version="5.3.5" />
-    <PackageReference Include="NUnit" Version="3.13.1" />
+    <PackageReference Include="NHibernate" Version="5.3.11" />
+    <PackageReference Include="NUnit" Version="3.13.2" />
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Microcelium.Testing.NHibernate\Microcelium.Testing.NHibernate.csproj" />
     <ProjectReference Include="..\Microcelium.Testing.NUnit\Microcelium.Testing.NUnit.csproj" />
     <ProjectReference Include="..\Microcelium.Testing\Microcelium.Testing.csproj" />
   </ItemGroup>

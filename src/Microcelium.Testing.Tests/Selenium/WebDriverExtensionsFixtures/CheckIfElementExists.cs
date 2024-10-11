@@ -1,88 +1,53 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Collections.Specialized;
-using System.Linq;
-using System.Threading.Tasks;
 using FluentAssertions;
-using Microcelium.Testing.Net;
-using Microcelium.Testing.NUnit;
-using Microcelium.Testing.NUnit.Selenium;
-using Microcelium.Testing.Selenium.Pages;
-using Microsoft.AspNetCore;
-using Microsoft.AspNetCore.Hosting;
+using Microcelium.Testing.Web;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Routing;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
+using Microsoft.Extensions.Hosting;
 using NUnit.Framework;
 using OpenQA.Selenium;
 
-namespace Microcelium.Testing.Selenium.WebDriverExtensionsFixtures
+namespace Microcelium.Testing.Selenium.WebDriverExtensionsFixtures;
+
+[Parallelizable(ParallelScope.Fixtures)]
+[RequiresScreenshotsDirectory]
+[RequiresWebEndpoint]
+[RequiresSelenium]
+internal class CheckIfElementExists :  
+  IConfigureSeleniumWebDriverConfig,
+  IRequireWebHostOverride, 
+  IRequireScreenshots
 {
-  [Parallelizable(ParallelScope.None)]
-  internal class CheckIfElementExists : IRequireWebPage<ElementSite, ElementPage>,
-    IProvideServiceCollectionConfiguration
+  [Test]
+  public void ReturnsMatchingElement()
   {
-    private string url;
-
-    public void Configure(IServiceCollection services)
-    {
-      var args = new NameValueCollection();
-      url = $"http://localhost:{TcpPort.NextFreePort()}";
-      args.Add("BaseUrl", url);
-
-      services.AddInMemoryWebDriverConfig(args.Keys.Cast<string>().Select(x => KeyValuePair.Create(x, args[x])));
-      services.AddWebComponents(typeof(ElementSite), typeof(ElementPage));
-    }
-
-    public ElementSite Site { get; set; }
-    public ElementPage Page { get; set; }
-
-    public IWebHost CreateHost()
-    {
-      return WebHost.Start(
-        url,
-        router => router
-          .MapGet(
-            "",
-            (req, res, data) => {
-              res.ContentType = "text/html";
-              return res.WriteAsync("<body><div class='container'><div id='Foo' /></div></body>");
-            }));
-    }
-
-    [Test]
-    public async Task ReturnsMatchingElement()
-    {
-      using var host = CreateHost();
-      Page.Navigate();
-      await Page.Wait();
-      Page.SafeFooElement.Should().NotBeNull();
-    }
-
-    [Test]
-    public async Task ReturnsFalseForNoMatchingElement()
-    {
-      using var host = CreateHost();
-      Page.Navigate();
-      await Page.Wait();
-      Page.SafeBarElement.Should().BeNull();
-    }
+    Driver.Navigate().GoToUrl(HostUri.ToString());
+    Driver.ElementExists(By.Id("Foo")).Should().NotBeNull();
   }
 
-  internal class ElementSite : WebSite
+  [Test]
+  public void ReturnsFalseForNoMatchingElement()
   {
-    public ElementSite(IWebDriver driver, IOptions<WebDriverConfig> config) : base(driver, config) { }
+    Driver.Navigate().GoToUrl(HostUri.ToString());
+    Driver.ElementExists(By.Id("Bar")).Should().BeNull();
   }
 
-  internal class ElementPage : WebPage<ElementPage>
+  public void Configure(WebDriverConfig config)
   {
-    public ElementPage(IWebSite site, ILoggerFactory lf, TimeSpan? timeout = null) : base(site, lf, timeout) { }
-    public override By LoadedIdentifier => By.CssSelector("div.container");
-    public override string RelativePath => "/";
-
-    public IWebElement SafeFooElement => Parent.Driver.ElementExists(By.Id("Foo"));
-    public IWebElement SafeBarElement => Parent.Driver.ElementExists(By.Id("Bar"));
+    config.BaseUri = HostUri.ToString();
+    config.Timeout.Implicit = TimeSpan.FromSeconds(1);
   }
+
+  public void Configure(WebApplication endpoint)
+  {
+    endpoint.MapGet("/", context => {
+      context.Response.ContentType = "text/html";
+      return context.Response.WriteAsync("<html><body><div id='Foo' /></body></html>");
+    });
+  }
+
+  public IHost Host { get; set; }
+  public IWebDriverExtensions Driver { get; set; }
+  public Uri HostUri { get; set; }
+  public string ScreenshotDirectory { get; set; }
 }

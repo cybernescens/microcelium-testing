@@ -3,54 +3,58 @@ using System.Collections.Generic;
 using Microsoft.Extensions.Logging;
 using OpenQA.Selenium;
 
-namespace Microcelium.Testing.Selenium
-{
-  /// <summary>
-  ///   Offers some selenium Javascript help
-  /// </summary>
-  public class Javascript
-  {
-    private readonly string function;
-    private readonly ILogger log;
+namespace Microcelium.Testing.Selenium;
 
-    private Javascript(string function, ILogger log)
+public class Javascript
+{
+  private readonly string function;
+  private readonly ILogger<Javascript> log;
+
+  private Javascript(string function, ILoggerFactory lf)
+  {
+    this.function = function;
+    log = lf.CreateLogger<Javascript>();
+  }
+
+  public static Javascript FunctionResult(string function, ILoggerFactory lf) => new(function, lf);
+
+  public Func<IWebDriver, bool> DoesNotMatch<TExpectedResult>(TExpectedResult expectation)
+    where TExpectedResult : IConvertible =>
+    d => Evaluate(d, expectation, false);
+
+  public Func<IWebDriver, bool> Matches<TExpectedResult>(TExpectedResult expectation)
+    where TExpectedResult : IConvertible =>
+    d => Evaluate(d, expectation, true);
+
+  private bool Evaluate<TExpectedResult>(
+    IWebDriver driver,
+    TExpectedResult expectation,
+    bool matches) where TExpectedResult : IConvertible
+  {
+    TExpectedResult? ExecuteScript(string script) 
     {
-      this.function = function;
-      this.log = log;
+      var js = (IJavaScriptExecutor)driver;
+      var executeScript = js.ExecuteScript(script);
+      if (executeScript == null)
+        return default;
+
+      return (TExpectedResult)Convert.ChangeType(executeScript, typeof(TExpectedResult));
     }
 
-    /// <summary>
-    /// </summary>
-    /// <param name="function"></param>
-    /// <param name="log"></param>
-    /// <returns></returns>
-    public static Javascript FunctionResult(string function, ILogger log) => new Javascript(function, log);
+    try
+    {
+      log.LogInformation("Waiting for '{Function}' to equal '{Result}'...", function, expectation);
+      var javascriptResult = ExecuteScript($"return {function}");
+      log.LogInformation("{Function} = '{Result}'", function, javascriptResult);
 
-    /// <summary>
-    /// </summary>
-    /// <typeparam name="TExpectedResult"></typeparam>
-    /// <param name="expectedResult"></param>
-    /// <param name="matches"></param>
-    /// <returns></returns>
-    public Func<IWebDriver, bool> Matches<TExpectedResult>(TExpectedResult expectedResult, bool matches = true) =>
-      driver => {
-        bool result;
-        try
-        {
-          log.LogInformation("Waiting for '{0}' to equal '{1}'...", function, expectedResult);
-          var javascriptResult = driver.ExecuteScript<TExpectedResult>($"return {function}");
-          result = !(EqualityComparer<TExpectedResult>.Default.Equals(javascriptResult, expectedResult) ^
-            matches); //!xor => xand
+      //!xor => xand
+      return !(EqualityComparer<TExpectedResult>.Default.Equals(javascriptResult, expectation) ^ matches);
+    }
+    catch (Exception e)
+    {
+      log.LogError(e, "Error executing javascript.");
+    }
 
-          log.LogInformation("{0} = '{1}'", function, javascriptResult);
-        }
-        catch (Exception e)
-        {
-          log.LogError(e, "Error executing javascript.");
-          result = true;
-        }
-
-        return result;
-      };
+    return !matches;
   }
 }

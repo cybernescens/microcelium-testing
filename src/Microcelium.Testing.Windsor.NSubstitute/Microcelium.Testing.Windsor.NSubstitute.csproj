@@ -1,14 +1,15 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net5.0</TargetFramework>
+    <TargetFramework>net6.0</TargetFramework>
     <RootNamespace>Microcelium.Testing</RootNamespace>
-    <AssemblyName>Microcelium.Testing.Windsor.NSubstitute</AssemblyName>
+    <Nullable>enable</Nullable>
+    <NoWarn>1591</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="Castle.Windsor" Version="5.1.1" />
-    <PackageReference Include="NSubstitute" Version="4.2.2" />
+    <PackageReference Include="NSubstitute" Version="4.3.0" />
   </ItemGroup>
 
   <ItemGroup>

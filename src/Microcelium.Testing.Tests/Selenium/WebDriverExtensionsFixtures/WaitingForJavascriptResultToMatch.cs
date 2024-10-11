@@ -1,83 +1,48 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Collections.Specialized;
-using System.Linq;
 using System.Threading.Tasks;
-using FluentAssertions;
-using Microcelium.Testing.Net;
-using Microcelium.Testing.NUnit;
-using Microcelium.Testing.NUnit.Selenium;
-using Microcelium.Testing.Selenium.Pages;
-using Microsoft.AspNetCore;
+using Microcelium.Testing.Web;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Routing;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
+using Microsoft.Extensions.Hosting;
 using NUnit.Framework;
-using OpenQA.Selenium;
 
-namespace Microcelium.Testing.Selenium.WebDriverExtensionsFixtures
+namespace Microcelium.Testing.Selenium.WebDriverExtensionsFixtures;
+
+[Parallelizable(ParallelScope.Fixtures)]
+[RequiresScreenshotsDirectory]
+[RequiresWebEndpoint]
+[RequiresSelenium]
+internal class WaitingForJavascriptResultToMatch : 
+  IConfigureSeleniumWebDriverConfig,
+  IRequireWebHostOverride, 
+  IRequireScreenshots
 {
-  [Parallelizable(ParallelScope.None)]
-  internal class WaitingForJavascriptResultToMatch :
-    IRequireLogger,
-    IRequireWebPage<JavaScriptSite, JavaScriptPage>,
-    IProvideServiceCollectionConfiguration
+  public void Configure(WebDriverConfig config)
   {
-    private string url;
-
-    public void Configure(IServiceCollection services)
-    {
-      var args = new NameValueCollection();
-      url = $"http://localhost:{TcpPort.NextFreePort()}";
-      args.Add("BaseUrl", url);
-      services.AddInMemoryWebDriverConfig(args.Keys.Cast<string>().Select(x => KeyValuePair.Create(x, args[x])));
-      services.AddWebComponents(typeof(JavaScriptSite), typeof(JavaScriptPage));
-    }
-
-    public JavaScriptSite Site { get; set; }
-    public JavaScriptPage Page { get; set; }
-
-    [Test]
-    public async Task ReturnsTrueForExpectedMatch()
-    {
-      using var host = WebHost.Start(
-        url,
-        router => router
-          .MapGet(
-            "/",
-            (req, res, data) => {
-              res.ContentType = "text/html";
-              return res.WriteAsync("<body></body>");
-            }));
-
-      Page.Navigate();
-      await Page.Wait();
-      Page.TestJavaScript();
-    }
+    config.BaseUri = HostUri.ToString();
+    config.Timeout.Implicit = TimeSpan.FromSeconds(3);
   }
 
-  internal class JavaScriptSite : WebSite
+  public void Configure(WebApplication endpoint)
   {
-    public JavaScriptSite(IWebDriver driver, IOptions<WebDriverConfig> config) : base(driver, config) { }
+    endpoint.MapGet(
+      "/",
+      context => {
+        context.Response.ContentType = "text/html";
+        return context.Response.WriteAsync("<html><body></body></html>");
+      });
   }
 
-  internal class JavaScriptPage : WebPage<JavaScriptPage>
+  [Test]
+  public Task ReturnsTrueForExpectedMatch()
   {
-    private readonly ILogger<JavaScriptPage> log;
-
-    public JavaScriptPage(IWebSite site, ILoggerFactory lf, TimeSpan? timeout = null) : base(site, lf, timeout)
-    {
-      log = lf.CreateLogger<JavaScriptPage>();
-    }
-
-    public override By LoadedIdentifier => By.CssSelector("body");
-    public override string RelativePath => "/";
-
-    public void TestJavaScript()
-    {
-      Parent.Driver.WaitForJavascriptResult("6 / 3", 2, log, TimeSpan.FromMilliseconds(100)).Should().Be(true);
-    }
+    Driver.Navigate().GoToUrl(HostUri.ToString());
+    Driver.WaitForJavascriptResult("6 / 3", 2);
+    return Task.CompletedTask;
   }
+
+  public IHost Host { get; set; }
+  public IWebDriverExtensions Driver { get; set; }
+  public Uri HostUri { get; set; }
+  public string ScreenshotDirectory { get; set; }
 }

@@ -1,9 +1,6 @@
-﻿namespace Microcelium.Testing.Selenium
+﻿namespace Microcelium.Testing.Selenium;
+
+public interface IRequireDownloadDirectory : IRequireDirectory
 {
-  /// <summary>
-  /// Decorator for when a Download Directory is required
-  /// </summary>
-  public interface IRequireDownloadDirectory
-  {
-  }
+  string? DownloadDirectory { get; set; }
 }

@@ -1,227 +1,188 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Security;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection.Extensions;
-using Microsoft.Extensions.Options;
-using OpenQA.Selenium.Chrome;
+using System.Net.Http;
+using Microsoft.Extensions.Logging;
 
-namespace Microcelium.Testing.Selenium
+namespace Microcelium.Testing.Selenium;
+
+/// <summary>
+///   Selenium Driver Configuration Options
+/// </summary>
+public class WebDriverConfig
 {
+  public static readonly string SectionName = "WebDriver";
+
+  private static readonly string BlankPage =
+    "<html><body><div>...Loading Tests...</div></body></html>";
+
+  private string baseUri = "https://localhost:44314";
+
   /// <summary>
-  ///   Configuration options for Selenium
+  ///   This site Base URI
   /// </summary>
-  public class WebDriverConfig
+  public string BaseUri
   {
-    public static readonly string SectionName = "selenium";
-
-    /// <summary>
-    ///   Configuration parameter:
-    ///   <c>webdriver.browser.type</c>
-    /// </summary>
-    public string BrowserType { get; set; } = typeof(ChromeDriver).FullName;
-
-    /// <summary>
-    /// The browser size
-    /// </summary>
-    public string BrowserSize { get; set; } = "1600,1200";
-
-    /// <summary>
-    ///   Configuration parameter: <c>webdriver.browser.runheadless</c>
-    /// </summary>
-    public bool RunHeadless { get; set; } = true;
-
-    /// <summary>
-    ///   Configuration parameter: <c>webdriver.timeout.pageload</c>
-    /// </summary>
-    public TimeSpan PageLoadTimeout { get; set; } = TimeSpan.FromSeconds(30);
-
-    /// <summary>
-    ///   Configuration parameter: <c>webdriver.timeout.implicitwait</c>
-    ///   This really should be zero
-    /// </summary>
-    public TimeSpan ImplicitTimeout { get; set; } = TimeSpan.FromSeconds(20);
-
-    /// <summary>
-    ///   Configuration parameter: <c>webdriver.timeout.browser</c>
-    ///   Timeout waiting for browser to respond. Default to 60 seconds
-    /// </summary>
-    public TimeSpan BrowserTimeout { get; set; } = TimeSpan.FromMinutes(1);
-
-    /// <summary>
-    ///   The Base URL of the site the driver will be working with
-    /// </summary>
-    public string BaseUrl { get; set; }
-
-    /// <summary>
-    ///   If authentication is required, the username
-    /// </summary>
-    public string Username { get; set; }
-
-    /// <summary>
-    ///   If authentication is required, the password
-    /// </summary>
-    public string Password { get; set; }
-
-    /// <summary>
-    ///   Relative Redirect URL after logging in
-    /// </summary>
-    public string RelativeLoginUrl { get; set; } = "/";
-
-    /// <summary>
-    ///   Relative path to an inteligenz logo, should be a path
-    ///   that requires no authentication
-    /// </summary>
-    public string RelativeLogoPath { get; set; } = "/favicon.ico";
-
-    /// <summary>
-    /// </summary>
-    public string AzureClientId { get; set; }
-
-    /// <summary>
-    /// </summary>
-    public string AzureClientSecret { get; set; }
-
-    /// <summary>
-    /// </summary>
-    public string AzureTenantId { get; set; } = "ccb9ffa9-f1ed-4f51-9b6a-e5cf6d8275c7";
-
-    /// <summary>
-    /// </summary>
-    private string AzureClientAuthority { get; } = "https://login.microsoftonline.com/<TenantId>/";
-
-    /// <summary>
-    ///   CSS Selector used to validate login was successful
-    /// </summary>
-    public string LoggedInValidationSelector { get; set; } = "button.user-name";
-
-    /// <summary>
-    ///   Configuration parameter: <c>webdriver.browser.type</c>
-    /// </summary>
-    public (int Width, int Height) GetBrowserSize()
-    {
-      if (string.IsNullOrEmpty(BrowserSize))
-        return (1600, 1200);
-
-      var parts = BrowserSize.Split(',').Select(x => int.Parse(x.Trim())).ToArray();
-      if (parts.Length != 2)
-        throw new InvalidOperationException("browserSize does not appear to be valid. Should be 'width,height'");
-
-      return (parts[0], parts[1]);
-    }
-
-    /// <summary>
-    /// </summary>
-    /// <returns></returns>
-    public Uri GetBaseUrl() => new Uri(BaseUrl);
-
-    /// <summary>
-    ///   The secure password
-    /// </summary>
-    /// <returns></returns>
-    public SecureString GetPassword()
-    {
-      var pw = new SecureString();
-      foreach (var c in Password)
-        pw.AppendChar(c);
-
-      return pw;
-    }
-
-    /// <summary>
-    /// </summary>
-    /// <returns></returns>
-    public Uri GetAzureClientAuthority() => new Uri(AzureClientAuthority.Replace("<TenantId>", AzureTenantId));
-
-    /// <summary>
-    ///   Gets the configured <see cref="ChromeOptions" />
-    /// </summary>
-    public ChromeOptions GetChromeOptions(Action<ChromeOptions> config = null, string downloadDirectory = null)
-    {
-      var size = GetBrowserSize();
-      var opts = new ChromeOptions();
-      opts.AddArgument("--incognito");
-      opts.AddArguments("--disable-extensions");
-      opts.AddArguments("--no-sandbox");
-      opts.AddArguments($"--window-size={size.Width},{size.Height}");
-
-      if (RunHeadless && string.IsNullOrEmpty(downloadDirectory))
-      {
-        opts.AddArguments("--headless");
-        opts.AddArguments("--disable-gpu");
-        opts.AddArguments("--hide-scrollbars");
-      }
-
-      /* caution, some things need to be AddLocalStatePreference,
-        e.g: browser.enable_labs_experimentsw, others need to be
-        AddUserProfilePreference, e.g. download.default_directory*/
-
-      opts.AddLocalStatePreference("download.prompt_for_download", false);
-      opts.AddLocalStatePreference("plugins.always_open_pdf_externally", true);
-      opts.AddLocalStatePreference("browser.enabled_labs_experiments",
-        new[] { "same-site-by-default-cookies@2", "cookies-without-same-site-must-be-secure@2" });
-
-      if (downloadDirectory != null)
-        opts.AddUserProfilePreference("download.default_directory", downloadDirectory);
-
-      config?.Invoke(opts);
-      return opts;
-    }
+    get => baseUri;
+    set =>
+      baseUri = value.EndsWith("/", StringComparison.InvariantCultureIgnoreCase)
+        ? value.Substring(0, value.Length - 1)
+        : value;
   }
 
   /// <summary>
-  /// Extensions methods to facilitate the configuration of some tests, particularly
-  /// those that expose an <see cref="IServiceCollection"/>
+  /// The <see cref="Uri"/> form of <see cref="BaseUri"/>
   /// </summary>
-  public static class WebDriverConfigExtensions
-  {
-    /// <summary>
-    /// Adds the "default" configuration scheme consisting of a local json file
-    /// name "appsettings.json" and any environment variables prefixed with "selenium_"
-    /// </summary>
-    /// <param name="services">the <see cref="IServiceCollection"/></param>
-    /// <param name="config">addition configuration of the <see cref="WebDriverConfig"/></param>
-    /// <returns></returns>
-    public static IServiceCollection AddWebDriverConfig(
-      this IServiceCollection services,
-      Action<WebDriverConfig> config = null)
-    {
-      var configuration = new ConfigurationBuilder()
-        .AddJsonFile("appsettings.json", true, false)
-        .AddEnvironmentVariables("selenium_")
-        .Build();
+  /// <returns></returns>
+  public Uri GetBaseUri() => new(BaseUri);
 
-      var wdc = new WebDriverConfig();
-      configuration.Bind(wdc, opt => { opt.BindNonPublicProperties = true; });
-      config?.Invoke(wdc);
-      services.TryAddSingleton(Options.Create(wdc));
-      return services;
-    }
+  /// <summary>
+  ///   Relative Redirect Path for Post-Login redirect
+  /// </summary>
+  public string RelativeLoginPath { get; set; } = "/";
 
-    /// <summary>
-    /// A version of configuration that omits the json file and includes only
-    /// environment variables prefixed with "selenium_" and additional takes
-    /// a dictionary that will overwrite any potential environment variables.
-    /// The passed in dictionary DOES NOT need to be prefixed.
-    /// </summary>
-    /// <param name="services">the <see cref="IServiceCollection"/></param>
-    /// <param name="args">the passed in parameters</param>
-    /// <returns></returns>
-    public static IServiceCollection AddInMemoryWebDriverConfig(
-      this IServiceCollection services,
-      IEnumerable<KeyValuePair<string, string>> args)
-    {
-      var configuration = new ConfigurationBuilder()
-        .AddEnvironmentVariables("selenium_")
-        .AddInMemoryCollection(args)
-        .Build();
+  /// <summary>
+  ///   <see cref="HttpContent"/> to be used as a response while attempting to authenticate
+  /// </summary>
+  public HttpContent WaitingContent { get; set; } = new StringContent(BlankPage);
 
-      var wdc = new WebDriverConfig();
-      configuration.Bind(wdc, opt => { opt.BindNonPublicProperties = true; });
-      services.TryAddSingleton(Options.Create(wdc));
-      return services;
-    }
-  }
+  /// <summary>
+  /// Browser Config Options
+  /// </summary>
+  public BrowserConfig Browser { get; set; } = new();
+  
+  /// <summary>
+  /// Timeout Config Options
+  /// </summary>
+  public TimeoutConfig Timeout { get; set; } = new();
+
+  /// <summary>
+  /// Authentication Config Options
+  /// </summary>
+  public AuthenticationConfig Authentication { get; set; } = new();
 }
+
+/// <summary>
+/// Browser Configuration Options
+/// </summary>
+public class BrowserConfig
+{
+  public static readonly string SectionName = nameof(WebDriverConfig.Browser);
+
+  /// <summary>
+  ///   The Assembly Qualified Name of the Selenium Driver
+  /// </summary>
+  public string DriverFactory { get; set; } = "Microcelium.Testing.Selenium.Chrome.ChromeDriverFactory";
+
+  /// <summary>
+  ///   The dimensions of the browser. Defaults to <code>1280</code>x<code>1024</code>;
+  /// </summary>
+  public Size Size { get; set; } = new(1280, 1024);
+
+  /// <summary>
+  ///   Run the tests Headless? Default is <code>true</code>.
+  /// </summary>
+  public bool Headless { get; set; } = true;
+}
+
+/// <summary>
+/// Time Configuration Options
+/// </summary>
+public class TimeoutConfig
+{
+  public static readonly string SectionName = nameof(WebDriverConfig.Timeout);
+
+  /// <summary>
+  ///   Page Load timeout. Default is <code>60</code>s
+  /// </summary>
+  public TimeSpan PageLoad { get; set; } = TimeSpan.FromSeconds(60);
+
+  /// <summary>
+  ///   Implicit wait timeout. Default is <code>30</code>s
+  /// </summary>
+  public TimeSpan Implicit { get; set; } = TimeSpan.FromSeconds(30);
+
+  /// <summary>
+  ///   The Browser timeout. Default is <code>120</code>s
+  /// </summary>
+  public TimeSpan Browser { get; set; } = TimeSpan.FromSeconds(120);
+
+  /// <summary>
+  ///   Implicit timeout for asynchronous java script
+  /// </summary>
+  public TimeSpan Script { get; set; } = TimeSpan.FromMinutes(5);
+
+  /// <summary>
+  ///   Implicit timeout for downloads
+  /// </summary>
+  public TimeSpan Download { get; set; } = TimeSpan.FromMinutes(1);
+}
+
+/// <summary>
+/// Authentication Configuration Options
+/// </summary>
+public class AuthenticationConfig
+{
+  public static readonly string SectionName = nameof(WebDriverConfig.Authentication);
+
+  public static readonly string CredentialModeLocal = "Local";
+  public static readonly string CredentialModeKeyVault = "KeyVault";
+
+  /// <summary>
+  /// The Client ID of the Proxy Application. Public Client Authorization Flow should be enabled as well
+  /// </summary>
+  public string? ClientId { get; set; }
+
+  /// <summary>
+  /// The CredentialMode, use <code>Local</code> to use <see cref="Username"/> and <see cref="Password"/>
+  /// and use <code>KeyVault</code> to use <see cref="KeyVaultUri"/>. In the Key Value we will look
+  /// for a secret named WebDriver__Auth__{KeyVaultSecretPrefix}_Username and WebDriver__Auth__{KeyVaultSecretPrefix}_Password
+  /// where the value of <code>KeyVaultSecretPrefix</code> can be provided by <see cref="KeyVaultSecretPrefix"/>.
+  /// <see cref="KeyVaultSecretPrefix"/> defaults to <code>Selenium</code>
+  /// </summary>
+  public string CredentialMode { get; set; } = "Local";
+  
+  /// <summary>
+  /// The Username to login as
+  /// </summary>
+  public string? KeyVaultUri { get; set; }
+
+  /// <summary>
+  /// The Username to login as
+  /// </summary>
+  public string KeyVaultSecretPrefix { get; set; } = "Selenium";
+
+  /// <summary>
+  /// The Username to login as
+  /// </summary>
+  public string? Username { get; set; }
+
+  /// <summary>
+  /// The password to use
+  /// </summary>
+  public string? Password { get; set; }
+
+  /// <summary>
+  /// The scopes to request with OpenId
+  /// </summary>
+  public string[] Scopes { get; set; } = Array.Empty<string>();
+
+  /// <summary>
+  /// Are we using Local Credentials
+  /// </summary>
+  /// <returns></returns>
+  public bool IsLocalCredentials() => 
+    CredentialMode.Equals(CredentialModeLocal, StringComparison.OrdinalIgnoreCase);
+
+  /// <summary>
+  /// Are we using remote credentials stored in Azure Key Vault
+  /// </summary>
+  /// <returns></returns>
+  public bool IsKeyVaultCredentials() =>
+    CredentialMode.Equals(CredentialModeKeyVault, StringComparison.OrdinalIgnoreCase);
+}
+
+/// <summary>
+/// A basic record representing width and height
+/// </summary>
+/// <param name="Width">the width (x-vector)</param>
+/// <param name="Height">the height (y-vector)</param>
+public record Size(int Width = 0, int Height = 0);

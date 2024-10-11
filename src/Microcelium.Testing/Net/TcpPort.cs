@@ -1,27 +1,26 @@
 ﻿using System.Net;
 using System.Net.Sockets;
 
-namespace Microcelium.Testing.Net
+namespace Microcelium.Testing.Net;
+
+public static class TcpPort
 {
-  public static class TcpPort
+  private static readonly object LockObject = new();
+
+  public static int NextFreePort()
   {
-    private static readonly object lockObject = new object();
-
-    public static int NextFreePort()
+    lock (LockObject)
     {
-      lock (lockObject)
+      var l = new TcpListener(IPAddress.Loopback, 0);
+      try
       {
-        var l = new TcpListener(IPAddress.Loopback, 0);
-        try
-        {
-          l.Start();
+        l.Start();
 
-          return ((IPEndPoint)l.LocalEndpoint).Port;
-        }
-        finally
-        {
-          l.Stop();
-        }
+        return ((IPEndPoint)l.LocalEndpoint).Port;
+      }
+      finally
+      {
+        l.Stop();
       }
     }
   }

@@ -1,92 +1,67 @@
 ﻿using System;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection.Extensions;
-using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Hosting;
 using NHibernate;
-using NUnit.Framework;
+using NHibernate.Cfg;
 using NUnit.Framework.Interfaces;
 
-namespace Microcelium.Testing.NUnit.NHibernate
+namespace Microcelium.Testing.NHibernate;
+
+/// <summary>
+///   Used to decorate a class to provider NHibernate support / access.
+///   When attached to a class then fires at the beginning and end of
+///   running the suite. When attached to a method, fires at the start
+///   and end of that method
+/// </summary>
+[AttributeUsage(AttributeTargets.Class)]
+public class RequireSessionFactoryAttribute : RequireHostAttribute
 {
-  /// <summary>
-  ///   Used to decorate a class to provide NHibernate support / access.
-  ///   When attached to a class then fires at the beginning and end of
-  ///   running the suite. When attached to a method, fires at the start
-  ///   and end of that method
-  /// </summary>
-  [AttributeUsage(AttributeTargets.Class | AttributeTargets.Interface)]
-  public class RequireSessionFactoryAttribute :
-    Attribute,
-    ITestAction,
-    IRequireLogger,
-    IManageServiceCollection,
-    IRequireServicesCollection
+  private Configuration configuration = null!;
+  private IRequireSessionFactory fixture = null!;
+  private ISessionFactory sessionFactory = null!;
+
+  protected override IRequireHost Fixture => fixture;
+
+  protected override void EnsureFixture(ITest test)
   {
-    private ILogger log;
-    private IServiceProvider provider;
-    private IServiceScope scope;
+    fixture = EnsureFixture<RequireSessionFactoryAttribute, IRequireSessionFactory>(test);
+  }
 
-    /// <inheritdoc />
-    public void BeforeTest(ITest test)
-    {
-      var fixture = GetRequireSessionFactoryFromFixture(test);
-      var services = this.GetServiceCollection();
-      log = this.CreateLogger();
+  protected override IHostBuilder CreateHostBuilder() => new HostBuilder();
+  protected override IHost CreateHost(IHostBuilder builder) => builder.Build();
 
-      var configProvider = test.Fixture as IProvideServiceCollectionConfiguration;
-      configProvider?.Configure(services);
+  protected override void ApplyToContext() { AddToContext(nameof(ISessionFactory), sessionFactory); }
 
-      services.TryAddSingleton(fixture.SessionFactoryManager);
-      services.TryAddSingleton(
-        sp => {
-          var start = DateTime.Now;
-          log.LogInformation("Initializing Session Factory...");
-          var sf = sp.GetRequiredService<ISessionFactoryManager>().Initialize();
-          log.LogInformation($"SessionFactory initialized, took {(DateTime.Now - start).TotalSeconds:n2}s");
-          return sf;
-        });
+  protected override void OnHostBuilding(IHostBuilder builder, ITest test)
+  {
+    configuration = new Configuration();
+    if (test.Fixture is IConfigureSessionFactory sf)
+      sf.Configure(configuration);
+  }
 
-      services.TryAddScoped(sp => sp.GetRequiredService<ISessionFactoryManager>().SessionProvider);
-      services.TryAddScoped(sp => sp.GetRequiredService<Func<ISession>>()());
+  protected override void OnHostBuilt(ITest test)
+  {
+    sessionFactory = this.serviceScope!.ServiceProvider.GetRequiredService<ISessionFactory>();
+    ((IRequireSessionFactory)test.Fixture!).SessionFactory = sessionFactory;
+  }
 
-      provider = this.BuildServiceProvider();
+  protected override void OnEndBeforeTest(ITest test)
+  {
+    if (test.Fixture is ISetupData data)
+      data.SetupData();
+  }
 
-      if (test.Fixture is ISetupData data)
-      {
-        log.LogInformation("Invoking SetupData");
-        using var pre = provider.CreateScope();
-        using var session = provider.GetRequiredService<ISession>();
-        data.SetupData(session);
-      }
+  protected override void OnStartAfterTest(ITest test)
+  {
+    if (test.Fixture is ICleanupData data)
+      data.CleanupData();
 
-      scope = provider.CreateScope();
-    }
+    //SafelyTry.Dispose(sessionFactory);
+  }
 
-    /// <inheritdoc />
-    public void AfterTest(ITest test)
-    {
-      scope?.Dispose();
-
-      if (test.Fixture is ISetupData data)
-      {
-        log.LogInformation("Invoking SetupData");
-        using var post = provider.CreateScope();
-        using var session = provider.GetRequiredService<ISession>();
-        data.CleanupData(session);
-      }
-
-      provider.GetRequiredService<ISessionFactory>()?.Dispose();
-      provider.GetRequiredService<ISessionFactoryManager>()?.Dispose();
-    }
-
-    /// <inheritdoc />
-    public ActionTargets Targets => ActionTargets.Suite;
-
-    private IRequireSessionFactory GetRequireSessionFactoryFromFixture(ITest test) =>
-      test.Fixture is not IRequireSessionFactory requireSessionFactory
-        ? throw new Exception(
-          $"Test should implement interface '{typeof(IRequireSessionFactory).FullName}'" +
-          $" instead of using the attribute '{GetType().FullName}'")
-        : requireSessionFactory;
+  protected override void DefaultServicesConfiguration(HostBuilderContext ctx, IServiceCollection services)
+  {
+    services.AddSingleton(configuration);
+    services.AddSingleton(sp => sp.GetRequiredService<Configuration>().BuildSessionFactory());
   }
 }

@@ -1,0 +1,20 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <NoWarn>1591</NoWarn>
+    <RootNamespace>Microcelium.Testing.Web</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.TestHost" Version="6.0.3" />
+    <PackageReference Include="NUnit" Version="3.13.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Microcelium.Testing.NUnit\Microcelium.Testing.NUnit.csproj" />
+    <ProjectReference Include="..\Microcelium.Testing.Web\Microcelium.Testing.Web.csproj" />
+  </ItemGroup>
+
+</Project>

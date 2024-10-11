@@ -1,94 +1,83 @@
 using System;
-using System.Collections.Generic;
-using System.Collections.Specialized;
-using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Microcelium.Testing.Net;
-using Microcelium.Testing.NUnit;
-using Microcelium.Testing.NUnit.Selenium;
-using Microcelium.Testing.Selenium.Pages;
-using Microsoft.AspNetCore;
+using Microcelium.Testing.Web;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using NUnit.Framework;
-using OpenQA.Selenium;
 
-namespace Microcelium.Testing.Selenium
+namespace Microcelium.Testing.Selenium;
+
+[Parallelizable(ParallelScope.Fixtures)]
+[RequiresWebEndpoint]
+internal class ImportingNetCookies : IRequireWebHostOverride, IRequireLogging, IConfigureWebHostAddress, IConfigureServices, IRequireServices
 {
-  [Parallelizable(ParallelScope.None)]
-  internal class ImportingNetCookies : IRequireWebPage<CookieSite, CookiePage>, IProvideServiceCollectionConfiguration
+  private string? tempuri;
+  private string? actualCookieValue;
+  private string expectedCookieValue = "Bar";
+  private readonly CookieContainer cookieContainer = new();
+
+  public void Configure(WebApplication endpoint)
   {
-    private string url;
+    endpoint.MapGet("/", context => {
+      context.Response.Cookies.Append("Foo", expectedCookieValue);
+      context.Response.ContentType = "text/html";
+      return context.Response.WriteAsync(string.Empty);
+    });
 
-    public void Configure(IServiceCollection services)
-    {
-      var args = new NameValueCollection();
-      url = $"http://localhost:{TcpPort.NextFreePort()}";
-      args.Add("BaseUrl", url);
-      services.AddInMemoryWebDriverConfig(args.Keys.Cast<string>().Select(x => KeyValuePair.Create(x, args[x])));
-      services.AddWebComponents(typeof(CookieSite), typeof(CookiePage), typeof(CheckCookiePage));
-    }
-
-    public CookieSite Site { get; set; }
-    public CookiePage Page { get; set; }
-
-    [Test]
-    public async Task ImportsCookiesForDomain()
-    {
-      string actualCookieValue = null;
-
-      var expectedCookieValue = "Bar";
-      var cookieContainer = new CookieContainer();
-
-      using var host = WebHost.Start(
-        url,
-        router => router
-          .MapGet(
-            "/",
-            (req, res, data) => {
-              res.Cookies.Append("Foo", expectedCookieValue);
-              res.ContentType = "text/html";
-              return res.WriteAsync("<html><body><div class='container'></div></body></html>");
-            })
-          .MapGet(
-            "/checkcookie",
-            (req, res, data) => {
-              actualCookieValue = req.Cookies["Foo"];
-              return res.WriteAsync("<html><body><div class='container'></div></body></html>");
-            }));
-
-      Page.Navigate();
-      await Page.Wait();
-      Site.Driver.ImportCookies(cookieContainer, new Uri(url));
-      var check = Page.LinkToCheckCookie.Navigate();
-      await check.Wait();
-      actualCookieValue.Should().Be(expectedCookieValue);
-    }
+    endpoint.MapGet("/checkcookie", context => {
+      actualCookieValue = context.Request.Cookies["Foo"];
+      context.Response.ContentType = "text/html";
+      return context.Response.WriteAsync(string.Empty);
+    });
   }
 
-  internal class CookieSite : WebSite
+  public void Apply(HostBuilderContext context, IServiceCollection services)
   {
-    public CookieSite(IWebDriver driver, IOptions<WebDriverConfig> config) : base(driver, config) { }
+    services
+      .AddHttpClient("cookie-consumer", client => { client.BaseAddress = HostUri; })
+      .ConfigurePrimaryHttpMessageHandler(
+        () => new HttpClientHandler { CookieContainer = cookieContainer, UseCookies = true });
   }
 
-  internal class CookiePage : WebPage<CookiePage>
+  [Test]
+  public async Task ImportsCookiesForDomain()
   {
-    public CookiePage(IWebSite site, ILoggerFactory lf, TimeSpan? timeout = null) : base(site, lf, timeout) { }
-    public override By LoadedIdentifier => By.CssSelector(".container");
-    public override string RelativePath => "/";
-    public CheckCookiePage LinkToCheckCookie => Parent.PreparePage<CheckCookiePage>();
+    var config = new WebDriverConfig { BaseUri = HostUri.ToString() };
+    var wdf = new WebDriverFactory(config);
+
+    var factory = Provider.GetRequiredService<IHttpClientFactory>();
+    
+    using var inner = wdf.Create(new RuntimeConfig());
+    using var driver = new WebDriverAdapter(inner, config, LoggerFactory);
+
+    driver.Navigate().GoToUrl(HostUri);
+    driver.ImportCookies(cookieContainer, HostUri);
+
+    using var client = factory.CreateClient("cookie-consumer");
+    await client.GetAsync("");
+
+    driver.Navigate().GoToUrl(HostUri + "checkcookie");
+    actualCookieValue.Should().Be(expectedCookieValue);
   }
 
-  internal class CheckCookiePage : WebPage<CheckCookiePage>
+  public IHost Host { get; set; }
+  public ILoggerFactory LoggerFactory { get; set; }
+  public Uri HostUri { get; set; }
+
+  public string GetHostUri()
   {
-    public CheckCookiePage(IWebSite site, ILoggerFactory lf, TimeSpan? timeout = null) : base(site, lf, timeout) { }
-    public override By LoadedIdentifier => By.CssSelector(".container");
-    public override string RelativePath => "/checkcookie";
+    if (string.IsNullOrEmpty(tempuri))
+      tempuri = $"https://localhost:{TcpPort.NextFreePort()}";
+
+    return tempuri;
   }
+
+  public IServiceProvider Provider { get; set; }
 }

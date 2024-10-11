@@ -1,102 +1,61 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Collections.Specialized;
-using System.Drawing;
-using System.IO;
-using System.Linq;
+using System.Threading.Tasks;
 using FluentAssertions;
 using Microcelium.Testing.Net;
-using Microcelium.Testing.NUnit;
-using Microcelium.Testing.NUnit.Selenium;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection.Extensions;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
+using Microcelium.Testing.Web;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Hosting;
 using NUnit.Framework;
-using OpenQA.Selenium;
 using OpenQA.Selenium.Chrome;
 
-namespace Microcelium.Testing.Selenium
+namespace Microcelium.Testing.Selenium;
+
+[Parallelizable(ParallelScope.Fixtures)]
+[RequiresWebEndpoint]
+[RequiresSelenium]
+internal class CreatingAWebDriver : IRequireSeleniumHost, IConfigureHostApplication, IConfigureWebHostAddress
 {
-  [Parallelizable(ParallelScope.None)]
-  internal class CreatingAWebDriver : IRequireLogger, IManageLogging
+  private string tempuri;
+
+  public void Apply(HostBuilderContext context, IConfigurationBuilder builder)
   {
-    private ILogger log;
+    var uri = GetHostUri();
 
-    [SetUp]
-    public void Setup()
-    {
-      this.AddLogging();
-      log = this.CreateLogger();
-    }
+    builder.AddInMemoryCollection(
+      new KeyValuePair<string, string>[] {
+        new("WebDriver:BaseUri", uri),
+        new("WebDriver:Browser:Size:Width", "1024"),
+        new("WebDriver:Browser:Size:Height", "768")
+      });
+  }
 
-    private static void ConfigureWebDriver(ServiceCollection services, NameValueCollection args)
-    {
-      services.AddInMemoryWebDriverConfig(args.Keys.Cast<string>().Select(x => KeyValuePair.Create(x, args[x])));
-      services.TryAddSingleton<IAuthenticationHelper, NoOpAuthenticationHelper>();
-      services.TryAddSingleton(
-        sp => {
-          var auth = sp.GetRequiredService<IAuthenticationHelper>();
-          var cfg = sp.GetRequiredService<IOptions<WebDriverConfig>>().Value;
-          var dd = Path.GetTempPath();
+  public IHost Host { get; set; }
 
-          var (wd, initializationException) =
-            WebDriverFactory.CreateAndInitialize(cfg, dd, (c, drv) => auth.PerformAuth(drv, c));
+  [Test]
+  public Task CreatesAChromeDriver()
+  {
+    Driver.DriverType.Should().BeAssignableTo<ChromeDriver>();
+    return Task.CompletedTask;
+  }
 
-          initializationException?.Throw();
-          return wd;
-        }
-      );
-    }
+  [Test]
+  public Task SetsBrowserSize()
+  {
+    Driver.Manage().Window.Size.Should().Be(new System.Drawing.Size(1024, 768));
+    return Task.CompletedTask;
+  }
 
-    [Test]
-    public void CreatesAChromeDriver()
-    {
-      var services = new ServiceCollection();
-      var args = new NameValueCollection();
-      args.Add("BaseUrl", $"http://localhost:{TcpPort.NextFreePort()}");
+  public IWebDriverExtensions Driver { get; set; }
+  public WebApplication Endpoint { get; set; }
+  public Uri HostUri { get; set; }
 
-      ConfigureWebDriver(services, args);
+  public string GetHostUri()
+  {
+    if (string.IsNullOrEmpty(tempuri))
+      tempuri = $"http://localhost:{TcpPort.NextFreePort()}";
 
-      var sp = services.BuildServiceProvider();
-      using var driver = sp.GetRequiredService<IWebDriver>();
-      driver.Should().BeOfType<ChromeDriver>();
-      driver?.Dispose();
-    }
-
-    [Test]
-    public void SetsBrowserSize()
-    {
-      var services = new ServiceCollection();
-      var args = new NameValueCollection();
-      args.Add("BrowserSize", "1024,768");
-      args.Add("BaseUrl", $"http://localhost:{TcpPort.NextFreePort()}");
-
-      ConfigureWebDriver(services, args);
-
-      var sp = services.BuildServiceProvider();
-      using var driver = sp.GetRequiredService<IWebDriver>();
-      driver.Manage().Window.Size.Should().Be(new Size(1024, 768));
-      driver?.Dispose();
-    }
-
-    [Test]
-    public void ThrowsNotImplementedExceptionForUnknownDriver()
-    {
-      Action act = () => {
-        var services = new ServiceCollection();
-        var args = new NameValueCollection();
-        args.Add("BaseUrl", $"http://localhost:{TcpPort.NextFreePort()}");
-        args.Add("BrowserType", "no-factory-method");
-        ConfigureWebDriver(services, args);
-        var sp = services.BuildServiceProvider();
-        using var driver = sp.GetRequiredService<IWebDriver>();
-      };
-
-      act
-        .Should()
-        .Throw<Exception>()
-        .WithMessage("No browser configured for type 'no-factory-method'");
-    }
+    return tempuri;
   }
 }

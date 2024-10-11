@@ -1,32 +1,32 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net5.0</TargetFramework>
+    <TargetFramework>net6.0</TargetFramework>
     <RootNamespace>Microcelium.Testing</RootNamespace>
     <GenerateDocumentationFile>false</GenerateDocumentationFile>
     <IsPackable>false</IsPackable>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Castle.Windsor" Version="5.1.1" />
-    <PackageReference Include="FluentAssertions" Version="5.10.3" />
-    <PackageReference Include="Microsoft.AspNetCore" Version="2.2.0" />
-    <PackageReference Include="Microsoft.AspNetCore.TestHost" Version="5.0.0" />
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.8.3" />
-    <PackageReference Include="NETStandard.Library" Version="2.0.3" />
-    <PackageReference Include="NSubstitute" Version="4.2.2" />
-    <PackageReference Include="NUnit" Version="3.13.1" />
-    <PackageReference Include="NUnit3TestAdapter" Version="3.17.0" />
-    <PackageReference Include="Selenium.WebDriver" Version="3.141.0" />
-    <PackageReference Include="Selenium.WebDriver.ChromeDriver" Version="88.0.4324.9600" />
+    <Compile Remove="NUnit\**" />
+    <EmbeddedResource Remove="NUnit\**" />
+    <None Remove="NUnit\**" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Microcelium.Testing.Logging\Microcelium.Testing.Logging.csproj" />
-    <ProjectReference Include="..\Microcelium.Testing.Ninject.NSubstitute\Microcelium.Testing.Ninject.NSubstitute.csproj" />
-    <ProjectReference Include="..\Microcelium.Testing.NUnit.AspNetCore.TestServer\Microcelium.Testing.NUnit.AspNetCore.TestServer.csproj" />
+    <PackageReference Include="FluentAssertions" Version="6.5.1" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.1.0" />
+    <PackageReference Include="NETStandard.Library" Version="2.0.3" />
+    <PackageReference Include="NUnit" Version="3.13.2" />
+    <PackageReference Include="NUnit3TestAdapter" Version="4.2.1" />
+    <PackageReference Include="Selenium.WebDriver.ChromeDriver" Version="99.0.4844.5100" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\Microcelium.Testing.NUnit.Selenium\Microcelium.Testing.NUnit.Selenium.csproj" />
+    <ProjectReference Include="..\Microcelium.Testing.NUnit.Web\Microcelium.Testing.NUnit.Web.csproj" />
     <ProjectReference Include="..\Microcelium.Testing.NUnit\Microcelium.Testing.NUnit.csproj" />
+    <ProjectReference Include="..\Microcelium.Testing.Selenium.Chrome\Microcelium.Testing.Selenium.Chrome.csproj" />
     <ProjectReference Include="..\Microcelium.Testing.Selenium\Microcelium.Testing.Selenium.csproj" />
     <ProjectReference Include="..\Microcelium.Testing.Windsor.NSubstitute\Microcelium.Testing.Windsor.NSubstitute.csproj" />
     <ProjectReference Include="..\Microcelium.Testing\Microcelium.Testing.csproj" />
