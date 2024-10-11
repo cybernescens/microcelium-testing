@@ -1,4 +1,6 @@
 #r "paket:
+source release/dotnetcore
+source https://api.nuget.org/v3/index.json
 nuget BlackFox.Fake.BuildTask
 nuget BlackFox.CommandLine
 nuget NuGet.CommandLine
@@ -9,6 +11,7 @@ nuget Fake.DotNet.MSBuild
 nuget Fake.IO.FileSystem
 nuget Fake.IO.Zip
 nuget Fake.Runtime
+nuget FSharp.Core 6.0.0.0
 //"
 #load ".microcelium/lib/microcelium.fsx"
 

@@ -13,5 +13,11 @@
     <Copyright>Copyright microcelium @ 2019</Copyright>
     <LangVersion>preview</LangVersion>
     <DefineConstants Condition="'$(COMPUTERNAME)' == 'joe-nuc'">$(DefineConstants);DEVELOPER_MACHINE</DefineConstants>
+    <DeveloperMachine Condition="'$(COMPUTERNAME)' == 'joe-nuc' Or '$(COMPUTERNAME)' == 'joe-thinkpad' Or '$(COMPUTERNAME)' == 'DESKTOP-T77TGES'">true</DeveloperMachine>
+    <DisableImplicitNuGetFallbackFolder>true</DisableImplicitNuGetFallbackFolder>
+    <EnablePreviewFeatures>true</EnablePreviewFeatures>
+    <RestoreIgnoreFailedSources>true</RestoreIgnoreFailedSources>
+    <RollForward>Minor</RollForward>
   </PropertyGroup>
+
 </Project>
